@@ -437,7 +437,9 @@ def get_csrf_token(request):
         'http://localhost:5174',
         'http://localhost:5173',
         'https://himalayanvidyadaan.org',
-        'https://www.himalayanvidyadaan.org'
+        'https://www.himalayanvidyadaan.org',
+        'https://api.himalayanvidyadaan.org',
+        'https://admin.himalayanvidyadaan.org'
     ]
     
     # Set CORS headers if origin is allowed

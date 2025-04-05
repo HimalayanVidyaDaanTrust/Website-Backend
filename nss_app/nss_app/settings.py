@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-your-secret-key-here'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'api.himalayanvidyadaan.org', 'www.himalayanvidyadaan.org', 'himalayanvidyadaan.org', '*']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'api.himalayanvidyadaan.org', 'www.himalayanvidyadaan.org', 'himalayanvidyadaan.org', 'admin.himalayanvidyadaan.org','*']
 
 
 # Application definition
@@ -154,6 +154,9 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:5173",
     "https://himalayanvidyadaan.org",
     "https://www.himalayanvidyadaan.org",
+    "https://api.himalayanvidyadaan.org",
+    "https://admin.himalayanvidyadaan.org",
+    
     "http://127.0.0.1:8000",  # Added local development server
     "http://localhost:8000",   # Added local development server
 ]
@@ -191,6 +194,7 @@ CSRF_COOKIE_SECURE = False  # Changed from True to False for development
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5173",
     "https://api.himalayanvidyadaan.org",
+    "https://admin.himalayanvidyadaan.org",
     "http://localhost:5174",
     "http://127.0.0.1:5173",
     "http://127.0.0.1:5174",
