@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Profile, Announcement, Download, Gallery, Brochure, Report, Contact, Event
+from .models import Profile, Announcement, Download, Gallery, Brochure, Report, Contact, Event,PYP,PYR,STP,STR,WTP,WTR
 
 @admin.register(Profile)
 class ProfileAdmin(admin.ModelAdmin):
@@ -31,11 +31,44 @@ class BrochureAdmin(admin.ModelAdmin):
     search_fields = ('title', 'description')
     list_filter = ('year', 'created_at')
 
-@admin.register(Report)
-class ReportAdmin(admin.ModelAdmin):
-    list_display = ('title', 'location', 'year', 'created_at')
+@admin.register(PYP)
+class PYPAdmin(admin.ModelAdmin):
+    list_display = ('title', 'location', 'exam_date', 'created_at')
     search_fields = ('title', 'location', 'description')
-    list_filter = ('year', 'created_at')
+    list_filter = ('exam_date', 'created_at')
+
+@admin.register(STP)
+class STPAdmin(admin.ModelAdmin):
+    list_display = ('title', 'location', 'exam_date', 'created_at')
+    search_fields = ('title', 'location', 'description')
+    list_filter = ('exam_date', 'created_at')
+
+
+@admin.register(WTP)
+class WTPAdmin(admin.ModelAdmin):
+    list_display = ('title', 'location', 'exam_date', 'created_at')
+    search_fields = ('title', 'location', 'description')
+    list_filter = ('exam_date', 'created_at')
+
+
+@admin.register(PYR)
+class PYRAdmin(admin.ModelAdmin):
+    list_display = ('title', 'location', 'result_date', 'created_at')
+    search_fields = ('title', 'location', 'description')
+    list_filter = ('result_date', 'created_at')
+
+@admin.register(STR)
+class STRAdmin(admin.ModelAdmin):
+    list_display = ('title', 'location', 'result_date', 'created_at')
+    search_fields = ('title', 'location', 'description')
+    list_filter = ('result_date', 'created_at')
+
+@admin.register(WTR)
+class WTRAdmin(admin.ModelAdmin):
+    list_display = ('title', 'location', 'result_date', 'created_at')
+    search_fields = ('title', 'location', 'description')
+    list_filter = ('result_date', 'created_at')
+
 
 @admin.register(Contact)
 class ContactAdmin(admin.ModelAdmin):

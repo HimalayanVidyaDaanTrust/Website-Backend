@@ -21,7 +21,7 @@ from django.conf.urls.static import static
 from rest_framework.routers import DefaultRouter
 from api.views import (
     ContactViewSet, AnnouncementViewSet, DownloadViewSet, 
-    GalleryViewSet, BrochureViewSet, ReportViewSet, EventViewSet,
+    GalleryViewSet, BrochureViewSet, ReportViewSet, EventViewSet,PYPViewSet,STPViewSet,
     get_csrf_token
 )
 
@@ -34,6 +34,8 @@ non_prefixed_router.register(r'gallery', GalleryViewSet)
 non_prefixed_router.register(r'brochures', BrochureViewSet)
 non_prefixed_router.register(r'reports', ReportViewSet)
 non_prefixed_router.register(r'events', EventViewSet)
+non_prefixed_router.register(r'pyp', PYPViewSet)
+non_prefixed_router.register(r'stp', STPViewSet)
 
 urlpatterns = [
     path('admin/', admin.site.urls),

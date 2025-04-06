@@ -118,3 +118,92 @@ class Event(models.Model):
         
     class Meta:
         ordering = ['-date', '-created_at'] 
+# Screending test paper   
+class PYP(models.Model):
+    title = models.CharField(max_length=200)
+    file = models.FileField(upload_to='pyp/')
+    exam_date = models.DateField()
+    location = models.CharField(max_length=100, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.title} - {self.location} ({self.year})"
+
+    class Meta:
+        ordering = ['exam_date', '-created_at']
+        
+# Surprise test paper
+class STP(models.Model):
+    title = models.CharField(max_length=200)
+    file = models.FileField(upload_to='stp/')
+    exam_date = models.DateField()
+    location = models.CharField(max_length=100, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.title} - {self.location} ({self.year})"
+
+    class Meta:
+        ordering = ['exam_date', '-created_at']
+        
+#weekly test paper
+class WTP(models.Model):
+    title = models.CharField(max_length=200)
+    file = models.FileField(upload_to='wtp/')
+    exam_date = models.DateField()
+    location = models.CharField(max_length=100, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.title} - {self.location} ({self.year})"
+
+    class Meta:
+        ordering = ['exam_date', '-created_at']
+        
+# Screening test result
+class PYR(models.Model):
+    title = models.CharField(max_length=200)
+    file = models.FileField(upload_to='wtp/')
+    result_date = models.DateField()
+    location = models.CharField(max_length=100, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.title} - {self.location} ({self.year})"
+
+    class Meta:
+        ordering = ['result_date', '-created_at']
+        
+#Surprise test result
+class STR(models.Model):
+    title = models.CharField(max_length=200)
+    file = models.FileField(upload_to='wtp/')
+    result_date = models.DateField()
+    location = models.CharField(max_length=100, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.title} - {self.location} ({self.year})"
+
+    class Meta:
+        ordering = ['result_date', '-created_at']
+    
+#Weekly test result
+class WTR(models.Model):
+    title = models.CharField(max_length=200)
+    file = models.FileField(upload_to='wtp/')
+    result_date = models.DateField()
+    location = models.CharField(max_length=100, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.title} - {self.location} ({self.year})"
+
+    class Meta:
+        ordering = ['result_date', '-created_at']

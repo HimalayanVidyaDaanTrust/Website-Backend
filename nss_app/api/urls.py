@@ -11,6 +11,13 @@ router.register(r'brochures', views.BrochureViewSet)
 router.register(r'reports', views.ReportViewSet)
 router.register(r'contact', views.ContactViewSet)
 router.register(r'events', views.EventViewSet)
+router.register(r'pyp', views.PYPViewSet)
+router.register(r'stp', views.STPViewSet)
+router.register(r'wtp', views.WTPViewSet)
+router.register(r'pyr', views.PYRViewSet)
+router.register(r'str', views.STRViewSet)
+router.register(r'wtr', views.WTRViewSet)
+
 
 urlpatterns = [
     path('', include(router.urls)),

@@ -4,11 +4,11 @@ from rest_framework.decorators import api_view, permission_classes
 from django.contrib.auth.models import User
 from django.db import IntegrityError
 import logging
-from .models import Profile, Announcement, Download, Gallery, Brochure, Report, Contact, Event
+from .models import Profile, Announcement, Download, Gallery, Brochure, Report, Contact, Event,PYP,STP,WTP, PYR,STR,WTR
 from .serializers import (
     UserSerializer, UserRegisterSerializer, ProfileSerializer,
     AnnouncementSerializer, DownloadSerializer, GallerySerializer,
-    BrochureSerializer, ReportSerializer, ContactSerializer, EventSerializer
+    BrochureSerializer, ReportSerializer, ContactSerializer, EventSerializer,PYPSerializer, STPSerializer,WTPSerializer,PYRSerializer,STRSerializer,WTRSerializer
 )
 from django.http import FileResponse, Http404, JsonResponse
 from django.views import View
@@ -609,6 +609,353 @@ class ReportDownload(generics.RetrieveAPIView):
         except Exception as e:
             raise Http404(f"Error serving file: {str(e)}")
 
+
+class PYPViewSet(viewsets.ModelViewSet):
+    queryset = PYP.objects.all().order_by('-exam_date', '-created_at')
+    serializer_class = PYPSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    content_negotiation_class = IgnoreClientContentNegotiation
+
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            return [permissions.IsAuthenticated()]
+        return [permissions.AllowAny()]
+    
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context.update({"request": self.request})
+        return context
+
+    @action(detail=True, methods=['get'])
+    def download(self, request, pk=None):
+        pyp_obj = self.get_object()
+        file_path = pyp_obj.file.path
+        if os.path.exists(file_path):
+            content_type, _ = mimetypes.guess_type(file_path)
+            if not content_type:
+                content_type = 'application/octet-stream'
+            
+            response = FileResponse(open(file_path, 'rb'), content_type=content_type)
+            response['Content-Disposition'] = f'attachment; filename="{os.path.basename(file_path)}"'
+            return response
+        return Response({"error": "File not found"}, status=status.HTTP_404_NOT_FOUND)
+    
+class PYPList(generics.ListCreateAPIView):
+    queryset = PYP.objects.all()
+    serializer_class = PYPSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+class PYPDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset = PYP.objects.all()
+    serializer_class = PYPSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+class PYPDownload(generics.RetrieveAPIView):
+    queryset = PYP.objects.all()
+    serializer_class = PYPSerializer
+    permission_classes = [permissions.AllowAny]
+    
+    def retrieve(self, request, *args, **kwargs):
+        pyp = self.get_object()
+        if not pyp.file:
+            raise Http404("File not found")
+        
+        try:
+            response = FileResponse(pyp.file.open('rb'), content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="{pyp.file.name.split("/")[-1]}"'
+            return response
+        except Exception as e:
+            raise Http404(f"Error serving file: {str(e)}")
+
+
+class STPViewSet(viewsets.ModelViewSet):
+    queryset = STP.objects.all().order_by('-exam_date', '-created_at')
+    serializer_class = STPSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    content_negotiation_class = IgnoreClientContentNegotiation
+
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            return [permissions.IsAuthenticated()]
+        return [permissions.AllowAny()]
+    
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context.update({"request": self.request})
+        return context
+
+    @action(detail=True, methods=['get'])
+    def download(self, request, pk=None):
+        stp_obj = self.get_object()
+        file_path = stp_obj.file.path
+        if os.path.exists(file_path):
+            content_type, _ = mimetypes.guess_type(file_path)
+            if not content_type:
+                content_type = 'application/octet-stream'
+            
+            response = FileResponse(open(file_path, 'rb'), content_type=content_type)
+            response['Content-Disposition'] = f'attachment; filename="{os.path.basename(file_path)}"'
+            return response
+        return Response({"error": "File not found"}, status=status.HTTP_404_NOT_FOUND)
+    
+class STPList(generics.ListCreateAPIView):
+    queryset = STP.objects.all()
+    serializer_class = STPSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+class STPDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset = STP.objects.all()
+    serializer_class = STPSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+class STPDownload(generics.RetrieveAPIView):
+    queryset = STP.objects.all()
+    serializer_class = STPSerializer
+    permission_classes = [permissions.AllowAny]
+    
+    def retrieve(self, request, *args, **kwargs):
+        stp = self.get_object()
+        if not stp.file:
+            raise Http404("File not found")
+        
+        try:
+            response = FileResponse(stp.file.open('rb'), content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="{stp.file.name.split("/")[-1]}"'
+            return response
+        except Exception as e:
+            raise Http404(f"Error serving file: {str(e)}")
+
+
+class WTPViewSet(viewsets.ModelViewSet):
+    queryset = WTP.objects.all().order_by('-exam_date', '-created_at')
+    serializer_class = WTPSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    content_negotiation_class = IgnoreClientContentNegotiation
+
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            return [permissions.IsAuthenticated()]
+        return [permissions.AllowAny()]
+    
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context.update({"request": self.request})
+        return context
+
+    @action(detail=True, methods=['get'])
+    def download(self, request, pk=None):
+        wtp_obj = self.get_object()
+        file_path = wtp_obj.file.path
+        if os.path.exists(file_path):
+            content_type, _ = mimetypes.guess_type(file_path)
+            if not content_type:
+                content_type = 'application/octet-stream'
+            
+            response = FileResponse(open(file_path, 'rb'), content_type=content_type)
+            response['Content-Disposition'] = f'attachment; filename="{os.path.basename(file_path)}"'
+            return response
+        return Response({"error": "File not found"}, status=status.HTTP_404_NOT_FOUND)
+    
+class WTPList(generics.ListCreateAPIView):
+    queryset = WTP.objects.all()
+    serializer_class = STPSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+class WTPDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset = WTP.objects.all()
+    serializer_class = WTPSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+class WTPDownload(generics.RetrieveAPIView):
+    queryset = WTP.objects.all()
+    serializer_class = WTPSerializer
+    permission_classes = [permissions.AllowAny]
+    
+    def retrieve(self, request, *args, **kwargs):
+        wtp = self.get_object()
+        if not wtp.file:
+            raise Http404("File not found")
+        
+        try:
+            response = FileResponse(wtp.file.open('rb'), content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="{wtp.file.name.split("/")[-1]}"'
+            return response
+        except Exception as e:
+            raise Http404(f"Error serving file: {str(e)}")
+
+class PYRViewSet(viewsets.ModelViewSet):
+    queryset = PYR.objects.all().order_by('-result_date', '-created_at')
+    serializer_class = PYRSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    content_negotiation_class = IgnoreClientContentNegotiation
+
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            return [permissions.IsAuthenticated()]
+        return [permissions.AllowAny()]
+    
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context.update({"request": self.request})
+        return context
+
+    @action(detail=True, methods=['get'])
+    def download(self, request, pk=None):
+        pyr_obj = self.get_object()
+        file_path = pyr_obj.file.path
+        if os.path.exists(file_path):
+            content_type, _ = mimetypes.guess_type(file_path)
+            if not content_type:
+                content_type = 'application/octet-stream'
+            
+            response = FileResponse(open(file_path, 'rb'), content_type=content_type)
+            response['Content-Disposition'] = f'attachment; filename="{os.path.basename(file_path)}"'
+            return response
+        return Response({"error": "File not found"}, status=status.HTTP_404_NOT_FOUND)
+    
+class PYRList(generics.ListCreateAPIView):
+    queryset = PYR.objects.all()
+    serializer_class = PYRSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+class PYRDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset = PYR.objects.all()
+    serializer_class = PYRSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+class PYRDownload(generics.RetrieveAPIView):
+    queryset = PYR.objects.all()
+    serializer_class = PYRSerializer
+    permission_classes = [permissions.AllowAny]
+    
+    def retrieve(self, request, *args, **kwargs):
+        pyr = self.get_object()
+        if not pyr.file:
+            raise Http404("File not found")
+        
+        try:
+            response = FileResponse(pyr.file.open('rb'), content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="{pyr.file.name.split("/")[-1]}"'
+            return response
+        except Exception as e:
+            raise Http404(f"Error serving file: {str(e)}")
+
+
+class STRViewSet(viewsets.ModelViewSet):
+    queryset = STR.objects.all().order_by('-result_date', '-created_at')
+    serializer_class = STRSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    content_negotiation_class = IgnoreClientContentNegotiation
+
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            return [permissions.IsAuthenticated()]
+        return [permissions.AllowAny()]
+    
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context.update({"request": self.request})
+        return context
+
+    @action(detail=True, methods=['get'])
+    def download(self, request, pk=None):
+        str_obj = self.get_object()
+        file_path = str_obj.file.path
+        if os.path.exists(file_path):
+            content_type, _ = mimetypes.guess_type(file_path)
+            if not content_type:
+                content_type = 'application/octet-stream'
+            
+            response = FileResponse(open(file_path, 'rb'), content_type=content_type)
+            response['Content-Disposition'] = f'attachment; filename="{os.path.basename(file_path)}"'
+            return response
+        return Response({"error": "File not found"}, status=status.HTTP_404_NOT_FOUND)
+    
+class STRList(generics.ListCreateAPIView):
+    queryset = STR.objects.all()
+    serializer_class = STRSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+class STRDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset = STR.objects.all()
+    serializer_class = STRSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+class STRDownload(generics.RetrieveAPIView):
+    queryset = STR.objects.all()
+    serializer_class = STRSerializer
+    permission_classes = [permissions.AllowAny]
+    
+    def retrieve(self, request, *args, **kwargs):
+        str = self.get_object()
+        if not str.file:
+            raise Http404("File not found")
+        
+        try:
+            response = FileResponse(str.file.open('rb'), content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="{str.file.name.split("/")[-1]}"'
+            return response
+        except Exception as e:
+            raise Http404(f"Error serving file: {str(e)}")
+
+
+class WTRViewSet(viewsets.ModelViewSet):
+    queryset = WTR.objects.all().order_by('-result_date', '-created_at')
+    serializer_class = WTRSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    content_negotiation_class = IgnoreClientContentNegotiation
+
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            return [permissions.IsAuthenticated()]
+        return [permissions.AllowAny()]
+    
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context.update({"request": self.request})
+        return context
+
+    @action(detail=True, methods=['get'])
+    def download(self, request, pk=None):
+        wtr_obj = self.get_object()
+        file_path = wtr_obj.file.path
+        if os.path.exists(file_path):
+            content_type, _ = mimetypes.guess_type(file_path)
+            if not content_type:
+                content_type = 'application/octet-stream'
+            
+            response = FileResponse(open(file_path, 'rb'), content_type=content_type)
+            response['Content-Disposition'] = f'attachment; filename="{os.path.basename(file_path)}"'
+            return response
+        return Response({"error": "File not found"}, status=status.HTTP_404_NOT_FOUND)
+    
+class WTRList(generics.ListCreateAPIView):
+    queryset = WTR.objects.all()
+    serializer_class = WTRSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+class WTRDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset = WTR.objects.all()
+    serializer_class = WTRSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+class WTRDownload(generics.RetrieveAPIView):
+    queryset = WTR.objects.all()
+    serializer_class = WTRSerializer
+    permission_classes = [permissions.AllowAny]
+    
+    def retrieve(self, request, *args, **kwargs):
+        wtr = self.get_object()
+        if not wtr.file:
+            raise Http404("File not found")
+        
+        try:
+            response = FileResponse(wtr.file.open('rb'), content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="{wtr.file.name.split("/")[-1]}"'
+            return response
+        except Exception as e:
+            raise Http404(f"Error serving file: {str(e)}")
+
 # Simple view for API index
 @api_view(['GET'])
 @permission_classes([permissions.AllowAny])
@@ -618,6 +965,12 @@ def api_index(request):
             "gallery": "/gallery/",
             "brochures": "/brochures/",
             "reports": "/reports/",
+            "pyp": "/pyp/",
+            "stp": "/stp/",
+            "wtp": "/wtp/",
+            "pyr": "/pyr/",
+            "str": "/str/",
+            "wtr": "/wtr/",
             "admin": "/admin/",
         }
     })
@@ -627,3 +980,5 @@ def logout_view(request):
         logout(request)
         return Response({'message': 'Logout successful'})
     return Response({'error': 'Method not allowed'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+

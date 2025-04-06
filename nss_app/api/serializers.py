@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import Profile, Announcement, Download, Gallery, Brochure, Report, Contact, Event
+from .models import Profile, Announcement, Download, Gallery, Brochure, Report, Contact, Event,PYP,STP,WTP, PYR,STR,WTR
 from django.conf import settings
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
@@ -139,3 +139,101 @@ class EventSerializer(serializers.ModelSerializer):
         fields = ('id', 'title', 'date', 'description', 'location', 'image', 
                  'is_featured', 'created_at', 'updated_at')
         read_only_fields = ('id', 'created_at', 'updated_at') 
+
+class PYPSerializer(serializers.ModelSerializer):
+    file_url = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = PYP
+        fields = ('id', 'title', 'file', 'file_url', 'exam_date', 'location', 'created_at', 'updated_at')
+        read_only_fields = ('id', 'created_at', 'updated_at')
+    
+    def get_file_url(self, obj):
+        if obj.file:
+            request = self.context.get('request')
+            if request is not None:
+                return request.build_absolute_uri(obj.file.url)
+            return f"{settings.MEDIA_URL}{obj.file}"
+        return None
+
+class STPSerializer(serializers.ModelSerializer):
+    file_url = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = STP
+        fields = ('id', 'title', 'file', 'file_url', 'exam_date', 'location', 'created_at', 'updated_at')
+        read_only_fields = ('id', 'created_at', 'updated_at')
+    
+    def get_file_url(self, obj):
+        if obj.file:
+            request = self.context.get('request')
+            if request is not None:
+                return request.build_absolute_uri(obj.file.url)
+            return f"{settings.MEDIA_URL}{obj.file}"
+        return None
+
+class WTPSerializer(serializers.ModelSerializer):
+    file_url = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = WTP
+        fields = ('id', 'title', 'file', 'file_url', 'exam_date', 'location', 'created_at', 'updated_at')
+        read_only_fields = ('id', 'created_at', 'updated_at')
+    
+    def get_file_url(self, obj):
+        if obj.file:
+            request = self.context.get('request')
+            if request is not None:
+                return request.build_absolute_uri(obj.file.url)
+            return f"{settings.MEDIA_URL}{obj.file}"
+        return None
+
+
+
+class PYRSerializer(serializers.ModelSerializer):
+    file_url = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = PYR
+        fields = ('id', 'title', 'file', 'file_url', 'result_date', 'location', 'created_at', 'updated_at')
+        read_only_fields = ('id', 'created_at', 'updated_at')
+    
+    def get_file_url(self, obj):
+        if obj.file:
+            request = self.context.get('request')
+            if request is not None:
+                return request.build_absolute_uri(obj.file.url)
+            return f"{settings.MEDIA_URL}{obj.file}"
+        return None
+
+class STRSerializer(serializers.ModelSerializer):
+    file_url = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = STR
+        fields = ('id', 'title', 'file', 'file_url', 'result_date', 'location', 'created_at', 'updated_at')
+        read_only_fields = ('id', 'created_at', 'updated_at')
+    
+    def get_file_url(self, obj):
+        if obj.file:
+            request = self.context.get('request')
+            if request is not None:
+                return request.build_absolute_uri(obj.file.url)
+            return f"{settings.MEDIA_URL}{obj.file}"
+        return None
+
+class WTRSerializer(serializers.ModelSerializer):
+    file_url = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = WTR
+        fields = ('id', 'title', 'file', 'file_url', 'result_date', 'location', 'created_at', 'updated_at')
+        read_only_fields = ('id', 'created_at', 'updated_at')
+    
+    def get_file_url(self, obj):
+        if obj.file:
+            request = self.context.get('request')
+            if request is not None:
+                return request.build_absolute_uri(obj.file.url)
+            return f"{settings.MEDIA_URL}{obj.file}"
+        return None
