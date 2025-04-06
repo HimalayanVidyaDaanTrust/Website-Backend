@@ -2,6 +2,9 @@ from rest_framework import serializers
 from django.contrib.auth.models import User
 from .models import Profile, Announcement, Download, Gallery, Brochure, Report, Contact, Event
 from django.conf import settings
+from django.utils.html import format_html
+from django.utils.safestring import mark_safe
+import re
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -36,10 +39,31 @@ class ProfileSerializer(serializers.ModelSerializer):
         read_only_fields = ('id', 'created_at', 'updated_at')
 
 class AnnouncementSerializer(serializers.ModelSerializer):
+    clickable_content = serializers.SerializerMethodField()
+    
     class Meta:
         model = Announcement
-        fields = ('id', 'title', 'content', 'date_posted', 'image', 'venue', 'time')
-        read_only_fields = ('id', 'date_posted')
+        fields = ('id', 'title', 'content', 'clickable_content', 'date_posted', 'image', 'venue', 'time')
+        read_only_fields = ('id', 'date_posted', 'clickable_content')
+    
+    def get_clickable_content(self, obj):
+        # Pattern to identify URLs
+        url_pattern = re.compile(r'(https?://[^\s]+|www\.[^\s]+)')
+        
+        # Replace URLs with HTML links
+        def replace_url(match):
+            url = match.group(0)
+            display_url = url
+            
+            # Add http:// to URLs starting with www.
+            if url.startswith('www.'):
+                url = 'http://' + url
+            
+            return f'<a href="{url}" target="_blank">{display_url}</a>'
+        
+        # Apply the replacement
+        linked_text = url_pattern.sub(replace_url, obj.content)
+        return linked_text
 
 class DownloadSerializer(serializers.ModelSerializer):
     class Meta:
