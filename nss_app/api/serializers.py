@@ -38,32 +38,40 @@ class ProfileSerializer(serializers.ModelSerializer):
                  'profile_pic', 'role', 'created_at', 'updated_at')
         read_only_fields = ('id', 'created_at', 'updated_at')
 
-class AnnouncementSerializer(serializers.ModelSerializer):
+
     clickable_content = serializers.SerializerMethodField()
+    
+class AnnouncementSerializer(serializers.ModelSerializer):
+    formatted_content = serializers.SerializerMethodField()
     
     class Meta:
         model = Announcement
-        fields = ('id', 'title', 'content', 'clickable_content', 'date_posted', 'image', 'venue', 'time')
-        read_only_fields = ('id', 'date_posted', 'clickable_content')
+        fields = ('id', 'title', 'content', 'formatted_content', 'date_posted', 'image', 'venue', 'time')
+        read_only_fields = ('id', 'date_posted', 'formatted_content')
     
-    def get_clickable_content(self, obj):
-        # Pattern to identify URLs
-        url_pattern = re.compile(r'(https?://[^\s]+|www\.[^\s]+)')
-        
-        # Replace URLs with HTML links
-        def replace_url(match):
-            url = match.group(0)
-            display_url = url
+    def get_formatted_content(self, obj):
+        try:
+            if not obj.content:
+                return ""
             
-            # Add http:// to URLs starting with www.
-            if url.startswith('www.'):
-                url = 'http://' + url
+            text = obj.content.replace('\n', '<br>')
             
-            return f'<a href="{url}" target="_blank">{display_url}</a>'
-        
-        # Apply the replacement
-        linked_text = url_pattern.sub(replace_url, obj.content)
-        return linked_text
+            # Pattern to identify URLs
+            url_pattern = re.compile(r'(https?://[^\s<]+|www\.[^\s<]+)')
+            
+            # Replace URLs with HTML links
+            def replace_url(match):
+                url = match.group(0)
+                if url.startswith('www.'):
+                    url = 'http://' + url
+                return f'<a href="{url}" target="_blank">{url}</a>'
+            
+            # Apply the replacement
+            linked_text = url_pattern.sub(replace_url, text)
+            return linked_text
+        except Exception as e:
+            # Fallback in case of any error
+            return obj.content or ""
 
 class DownloadSerializer(serializers.ModelSerializer):
     class Meta:
