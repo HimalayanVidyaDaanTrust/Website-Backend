@@ -36,6 +36,10 @@ non_prefixed_router.register(r'reports', ReportViewSet)
 non_prefixed_router.register(r'events', EventViewSet)
 non_prefixed_router.register(r'pyp', PYPViewSet)
 non_prefixed_router.register(r'stp', STPViewSet)
+non_prefixed_router.register(r'wtp', STPViewSet)
+non_prefixed_router.register(r'pyr', STPViewSet)
+non_prefixed_router.register(r'str', STPViewSet)
+non_prefixed_router.register(r'wtr', STPViewSet)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
