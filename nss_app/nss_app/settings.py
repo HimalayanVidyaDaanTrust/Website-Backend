@@ -175,7 +175,7 @@ CORS_ALLOW_HEADERS = [
 ]
 
 # For development only
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOW_ALL_CREDENTIALS = True
 
 # Email settings

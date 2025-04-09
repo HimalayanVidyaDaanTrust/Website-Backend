@@ -31,6 +31,12 @@ class BrochureAdmin(admin.ModelAdmin):
     search_fields = ('title', 'description')
     list_filter = ('year', 'created_at')
 
+@admin.register(Report)
+class ReportsAdmin(admin.ModelAdmin):
+    list_display = ('title', 'year', 'created_at')
+    search_fields = ('title', 'description')
+    list_filter = ('year', 'created_at')
+
 @admin.register(PYP)
 class PYPAdmin(admin.ModelAdmin):
     list_display = ('title', 'location', 'exam_date', 'created_at')
