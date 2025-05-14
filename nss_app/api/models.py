@@ -118,7 +118,7 @@ class Event(models.Model):
         
     class Meta:
         ordering = ['-date', '-created_at'] 
-# Screending test paper   
+# Screening test paper   
 class PYP(models.Model):
     title = models.CharField(max_length=200)
     file = models.FileField(upload_to='pyp/')
@@ -128,10 +128,11 @@ class PYP(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.title} - {self.location} ({self.year})"
+        return f"{self.title} - {self.location} ({self.exam_date})"
 
     class Meta:
         ordering = ['exam_date', '-created_at']
+        verbose_name = "Screening Test Paper"
         
 # Surprise test paper
 class STP(models.Model):
@@ -143,10 +144,11 @@ class STP(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.title} - {self.location} ({self.year})"
+        return f"{self.title} - {self.location} ({self.exam_date})"
 
     class Meta:
         ordering = ['exam_date', '-created_at']
+        verbose_name = "Surprise Test Paper"
         
 #weekly test paper
 class WTP(models.Model):
@@ -158,10 +160,11 @@ class WTP(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.title} - {self.location} ({self.year})"
+        return f"{self.title} - {self.location} ({self.exam_date})"
 
     class Meta:
         ordering = ['exam_date', '-created_at']
+        verbose_name = "Weekly Test Paper"
         
 # Screening test result
 class PYR(models.Model):
@@ -173,10 +176,11 @@ class PYR(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.title} - {self.location} ({self.year})"
+        return f"{self.title} - {self.location} ({self.result_date})"
 
     class Meta:
         ordering = ['result_date', '-created_at']
+        verbose_name = "Screening Test Result"
         
 #Surprise test result
 class STR(models.Model):
@@ -188,10 +192,11 @@ class STR(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.title} - {self.location} ({self.year})"
+        return f"{self.title} - {self.location} ({self.result_date})"
 
     class Meta:
         ordering = ['result_date', '-created_at']
+        verbose_name = "Surprise Test Result"
     
 #Weekly test result
 class WTR(models.Model):
@@ -203,7 +208,8 @@ class WTR(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.title} - {self.location} ({self.year})"
+        return f"{self.title} - {self.location} ({self.result_date})"
 
     class Meta:
         ordering = ['result_date', '-created_at']
+        verbose_name = "Weekly Test Result"
