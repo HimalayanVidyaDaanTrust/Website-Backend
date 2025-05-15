@@ -1,14 +1,17 @@
 from rest_framework import viewsets, permissions, status, generics, renderers
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.views import APIView
+from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 from django.contrib.auth.models import User
 from django.db import IntegrityError
+import traceback
 import logging
-from .models import Profile, Announcement, Download, Gallery, Brochure, Report, Contact, Event,PYP,STP,WTP, PYR,STR,WTR
+from .models import Profile, Announcement, Download, Gallery, Brochure, Report, Contact,PYP,STP,WTP, PYR,STR,WTR,ApprovalRequest
 from .serializers import (
-    UserSerializer, UserRegisterSerializer, ProfileSerializer,
+    UserSerializer, UserRegisterSerializer, ProfileSerializer,ApprovalRequestSerializer,
     AnnouncementSerializer, DownloadSerializer, GallerySerializer,
-    BrochureSerializer, ReportSerializer, ContactSerializer, EventSerializer,PYPSerializer, STPSerializer,WTPSerializer,PYRSerializer,STRSerializer,WTRSerializer
+    BrochureSerializer, ReportSerializer, ContactSerializer,PYPSerializer, STPSerializer,WTPSerializer,PYRSerializer,STRSerializer,WTRSerializer
 )
 from django.http import FileResponse, Http404, JsonResponse
 from django.views import View
@@ -22,14 +25,18 @@ from django.template.loader import render_to_string
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from django.views.decorators.csrf import ensure_csrf_cookie
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt
 from django.contrib.auth import authenticate, login, logout
 from rest_framework.authtoken.models import Token
 from django.middleware.csrf import get_token
 import mimetypes
 
 logger = logging.getLogger(__name__)
-
+class CsrfExemptSessionAuthentication(SessionAuthentication):
+    def enforce_csrf(self, request):
+        return  # Skip CSRF check
+    
 class IgnoreClientContentNegotiation(BaseContentNegotiation):
     def select_parser(self, request, parsers):
         return parsers[0]
@@ -37,6 +44,114 @@ class IgnoreClientContentNegotiation(BaseContentNegotiation):
     def select_renderer(self, request, renderers, format_suffix=None):
         return (renderers[0], renderers[0].media_type)
 
+
+class IsCoordinator(permissions.BasePermission):
+    """
+    Custom permission to only allow coordinators to access the view.
+    """
+    def has_permission(self, request, view):
+        try:
+            return request.user.is_authenticated and request.user.profile.role == 'Coordinator'
+        except:
+            return False
+
+class ApprovalRequestViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for approval requests.
+    - Coordinators can view all and approve/reject
+    - Slot Coordinators can only view their own
+    """
+    queryset = ApprovalRequest.objects.all().order_by('-created_at')
+    serializer_class = ApprovalRequestSerializer
+    
+    def get_permissions(self):
+        """
+        - List/retrieve/update/approve/reject: Coordinator only
+        - Others: Authenticated users
+        """
+        if self.action in ['list', 'retrieve', 'update', 'partial_update', 'approve', 'reject']:
+            permission_classes = [IsCoordinator]
+        else:
+            permission_classes = [permissions.IsAuthenticated]
+        return [permission() for permission in permission_classes]
+    
+    def get_queryset(self):
+        """
+        - Coordinators: all approval requests
+        - Others: only their own
+        """
+        user = self.request.user
+        if hasattr(user, 'profile') and user.profile.role == 'Coordinator':
+            return ApprovalRequest.objects.all().order_by('-created_at')
+        return ApprovalRequest.objects.filter(user=user).order_by('-created_at')
+    
+    @action(detail=True, methods=['post'])
+    def approve(self, request, pk=None):
+        """
+        Approve a request and update user's profile role
+        """
+        approval_request = self.get_object()
+        if approval_request.status != 'pending':
+            return Response({"error": "This request has already been processed"}, 
+                            status=status.HTTP_400_BAD_REQUEST)
+            
+        approval_request.status = 'approved'
+        approval_request.reviewed_by = request.user
+        approval_request.review_comments = request.data.get('comments', '')
+        approval_request.save()
+        
+        # Update user's profile role
+        profile = Profile.objects.get(user=approval_request.user)
+        profile.role = approval_request.requested_role
+        profile.save()
+        
+        return Response({
+            "message": f"User {approval_request.user.username} has been approved as {approval_request.requested_role}",
+            "approval_request": ApprovalRequestSerializer(approval_request).data
+        })
+    
+    @action(detail=True, methods=['post'])
+    def reject(self, request, pk=None):
+        """
+        Reject a request
+        """
+        approval_request = self.get_object()
+        if approval_request.status != 'pending':
+            return Response({"error": "This request has already been processed"}, 
+                            status=status.HTTP_400_BAD_REQUEST)
+            
+        approval_request.status = 'rejected'
+        approval_request.reviewed_by = request.user
+        approval_request.review_comments = request.data.get('comments', '')
+        approval_request.save()
+        
+        return Response({
+            "message": f"Request from {approval_request.user.username} has been rejected",
+            "approval_request": ApprovalRequestSerializer(approval_request).data
+        })
+        
+        
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def check_approval_status(request):
+    """
+    Check the approval status for the logged-in user
+    """
+    try:
+        approval_request = ApprovalRequest.objects.get(user=request.user)
+        return Response({
+            "status": approval_request.status,
+            "requested_role": approval_request.requested_role,
+            "review_comments": approval_request.review_comments,
+            "can_access_admin": approval_request.status == 'approved'
+        })
+    except ApprovalRequest.DoesNotExist:
+        return Response({
+            "status": "not_requested",
+            "can_access_admin": False
+        })
+        
+        
 class UserRegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserRegisterSerializer
@@ -112,7 +227,6 @@ class UserRegisterView(generics.CreateAPIView):
                 'error': f'Registration failed due to database integrity error: {str(e)}'
             }, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            import traceback
             logger.error(f"Unexpected error: {str(e)}")
             logger.error(f"Traceback: {traceback.format_exc()}")
             return Response({
@@ -289,18 +403,16 @@ class ReportViewSet(viewsets.ModelViewSet):
             response['Content-Disposition'] = f'attachment; filename="{os.path.basename(file_path)}"'
             return response
         return Response({"error": "File not found"}, status=status.HTTP_404_NOT_FOUND)
-
+    
+@method_decorator(csrf_exempt, name='dispatch')
 class ContactViewSet(viewsets.ModelViewSet):
     queryset = Contact.objects.all()
     serializer_class = ContactSerializer
     permission_classes = [permissions.AllowAny]
-    http_method_names = ['get', 'post', 'head', 'options']  # Limit to GET/POST methods
+    authentication_classes = [CsrfExemptSessionAuthentication, BasicAuthentication]
+    http_method_names = ['get', 'post', 'head', 'options']
 
     def create(self, request, *args, **kwargs):
-        """
-        Handle contact form submissions.
-        Works with both /api/contact/ and /contact/ endpoints.
-        """
         logger.info(f"Contact form data: {request.data}")
         logger.info(f"Request headers: {request.headers}")
         logger.info(f"Contact form endpoint accessed")
@@ -320,12 +432,12 @@ class ContactViewSet(viewsets.ModelViewSet):
 
     def send_email(self, contact):
         try:
+            # Construct HTML message
             msg = MIMEMultipart()
             msg['From'] = settings.EMAIL_HOST_USER
-            msg['To'] = 'tejashvikumawat@gmail.com'  # Hard-coded email as requested
+            msg['To'] = 'tejashvikumawat@gmail.com'
             msg['Subject'] = f"New Contact Form Submission: {contact.subject}"
 
-            # Create HTML body
             html_body = f"""
             <html>
             <body>
@@ -338,74 +450,48 @@ class ContactViewSet(viewsets.ModelViewSet):
             </body>
             </html>
             """
-            
+
             msg.attach(MIMEText(html_body, 'html'))
 
-            logger.info(f"Attempting to send email to tejashvikumawat@gmail.com from {settings.EMAIL_HOST_USER}")
-            
-            # Add more detailed logging for SMTP connection
-            logger.info(f"Connecting to SMTP server: {settings.EMAIL_HOST}:{settings.EMAIL_PORT}")
+            logger.info("Connecting to SMTP server...")
             server = smtplib.SMTP(settings.EMAIL_HOST, settings.EMAIL_PORT)
-            server.set_debuglevel(1)  # Enable SMTP debug output
-            
-            logger.info("Starting TLS connection")
+            server.set_debuglevel(0)
             server.starttls()
-            
-            logger.info(f"Logging in with user: {settings.EMAIL_HOST_USER}")
             server.login(settings.EMAIL_HOST_USER, settings.EMAIL_HOST_PASSWORD)
-            
-            logger.info("Sending email...")
             server.send_message(msg)
-            
-            logger.info("Quitting SMTP connection")
             server.quit()
-            
-            logger.info(f"Email sent successfully to tejashvikumawat@gmail.com for contact: {contact.name} <{contact.email}>")
+
+            logger.info("Email sent successfully.")
             return True
+
         except Exception as e:
-            logger.error(f"Failed to send email: {str(e)}")
-            # Log detailed error information
-            import traceback
-            logger.error(f"Email error details: {traceback.format_exc()}")
-            
-            # Try using Django's send_mail as a fallback
+            logger.error(f"Primary email send failed: {e}")
+            logger.error(traceback.format_exc())
+
+            # Fallback using Django's send_mail
             try:
-                logger.info("Trying Django's send_mail as fallback...")
+                logger.info("Trying fallback with send_mail...")
                 subject = f"New Contact Form Submission: {contact.subject}"
-                message = f"Name: {contact.name}\nEmail: {contact.email}\nSubject: {contact.subject}\nMessage: {contact.message}"
-                from_email = settings.EMAIL_HOST_USER
-                recipient_list = ['tejashvikumawat@gmail.com']
-                
-                send_mail(subject, message, from_email, recipient_list, fail_silently=False)
-                logger.info("Fallback email sent successfully")
+                plain_message = (
+                    f"Name: {contact.name}\n"
+                    f"Email: {contact.email}\n"
+                    f"Subject: {contact.subject}\n"
+                    f"Message: {contact.message}"
+                )
+                send_mail(
+                    subject=subject,
+                    message=plain_message,
+                    from_email=settings.EMAIL_HOST_USER,
+                    recipient_list=['tejashvikumawat@gmail.com'],
+                    fail_silently=False,
+                )
+                logger.info("Fallback email sent successfully.")
                 return True
             except Exception as fallback_error:
-                logger.error(f"Fallback email also failed: {str(fallback_error)}")
+                logger.error(f"Fallback email failed: {fallback_error}")
+                logger.error(traceback.format_exc())
                 return False
 
-class EventViewSet(viewsets.ModelViewSet):
-    queryset = Event.objects.all().order_by('-date')
-    serializer_class = EventSerializer
-    
-    def get_permissions(self):
-        if self.action in ['list', 'retrieve']:
-            permission_classes = [permissions.AllowAny]
-        else:
-            permission_classes = [permissions.IsAdminUser]
-        return [permission() for permission in permission_classes]
-        
-    def get_queryset(self):
-        queryset = Event.objects.all().order_by('-date')
-        featured = self.request.query_params.get('featured')
-        if featured and featured.lower() == 'true':
-            queryset = queryset.filter(is_featured=True)
-        return queryset
-
-    @action(detail=False, methods=['get'])
-    def featured(self, request):
-        featured_events = self.queryset.filter(is_featured=True)
-        serializer = self.get_serializer(featured_events, many=True)
-        return Response(serializer.data)
 
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
@@ -494,6 +580,23 @@ def login_view(request):
         except Profile.DoesNotExist:
             profile_data = {}
         
+        # Check approval status
+        approval_status = "not_requested"
+        can_access_admin = False
+        review_comments = None
+        
+        try:
+            approval_request = ApprovalRequest.objects.get(user=user)
+            approval_status = approval_request.status
+            can_access_admin = approval_status == 'approved'
+            review_comments = approval_request.review_comments
+        except ApprovalRequest.DoesNotExist:
+            pass
+        
+        # Special case: If user is superuser or has role 'Coordinator', they can always access admin
+        if user.is_superuser or (hasattr(user, 'profile') and user.profile.role == 'Coordinator'):
+            can_access_admin = True
+        
         response = Response({
             'token': token.key,
             'user_id': user.pk,
@@ -501,23 +604,49 @@ def login_view(request):
             'email': user.email,
             'first_name': user.first_name,
             'last_name': user.last_name,
-            'profile': profile_data
+            'profile': profile_data,
+            'approval_status': approval_status,
+            'can_access_admin': can_access_admin,
+            'review_comments': review_comments
         })
-        # Add CORS headers directly to bypass any middleware issues
-        response["Access-Control-Allow-Origin"] = "http://localhost:5174"
-        response["Access-Control-Allow-Origin"] = "http://localhost:5173"
-        response["Access-Control-Allow-Credentials"] = "true"
-        response["Access-Control-Allow-Headers"] = "Origin, X-Requested-With, Content-Type, Accept, Authorization, X-CSRFToken"
-        response["Access-Control-Allow-Methods"] = "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+        
+        # Add CORS headers
+        origin = request.headers.get('Origin', '')
+        allowed_origins = [
+            'http://localhost:5174',
+            'http://localhost:5173',
+            'https://himalayanvidyadaan.org',
+            'https://www.himalayanvidyadaan.org',
+            'https://api.himalayanvidyadaan.org',
+            'https://admin.himalayanvidyadaan.org'
+        ]
+        
+        if origin in allowed_origins:
+            response["Access-Control-Allow-Origin"] = origin
+            response["Access-Control-Allow-Credentials"] = "true"
+            response["Access-Control-Allow-Headers"] = "Origin, X-Requested-With, Content-Type, Accept, Authorization, X-CSRFToken"
+            response["Access-Control-Allow-Methods"] = "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+            
         return response
     else:
         response = Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
         # Add CORS headers to error response too
-        response["Access-Control-Allow-Origin"] = "http://localhost:5173"
-        response["Access-Control-Allow-Origin"] = "http://localhost:5174"
-        response["Access-Control-Allow-Credentials"] = "true"
-        response["Access-Control-Allow-Headers"] = "Origin, X-Requested-With, Content-Type, Accept, Authorization, X-CSRFToken"
-        response["Access-Control-Allow-Methods"] = "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+        origin = request.headers.get('Origin', '')
+        allowed_origins = [
+            'http://localhost:5174',
+            'http://localhost:5173',
+            'https://himalayanvidyadaan.org',
+            'https://www.himalayanvidyadaan.org',
+            'https://api.himalayanvidyadaan.org',
+            'https://admin.himalayanvidyadaan.org'
+        ]
+        
+        if origin in allowed_origins:
+            response["Access-Control-Allow-Origin"] = origin
+            response["Access-Control-Allow-Credentials"] = "true"
+            response["Access-Control-Allow-Headers"] = "Origin, X-Requested-With, Content-Type, Accept, Authorization, X-CSRFToken"
+            response["Access-Control-Allow-Methods"] = "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+            
         return response
 
 # Class-based views for direct API access

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import Profile, Announcement, Download, Gallery, Brochure, Report, Contact, Event,PYP,STP,WTP, PYR,STR,WTR
+from .models import Profile, Announcement, Download, Gallery, Brochure, Report, Contact,PYP,STP,WTP, PYR,STR,WTR,ApprovalRequest
 from django.conf import settings
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
@@ -14,12 +14,22 @@ class UserSerializer(serializers.ModelSerializer):
 
 class UserRegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
+    role = serializers.CharField(write_only=True)
+    entry_number = serializers.CharField(write_only=True, required=False, allow_blank=True)
+    mobile_number = serializers.CharField(write_only=True, required=False, allow_blank=True)
+    webmail = serializers.EmailField(write_only=True, required=False, allow_blank=True)
     
     class Meta:
         model = User
-        fields = ('username', 'email', 'password', 'first_name', 'last_name')
+        fields = ('username', 'email', 'password', 'first_name', 'last_name', 
+                 'role', 'entry_number', 'mobile_number', 'webmail')
     
     def create(self, validated_data):
+        role = validated_data.pop('role', 'Slot Coordinator')
+        entry_number = validated_data.pop('entry_number', None)
+        mobile_number = validated_data.pop('mobile_number', None)
+        webmail = validated_data.pop('webmail', None)
+        
         user = User.objects.create_user(
             username=validated_data['username'],
             email=validated_data.get('email', ''),
@@ -27,6 +37,18 @@ class UserRegisterSerializer(serializers.ModelSerializer):
             first_name=validated_data.get('first_name', ''),
             last_name=validated_data.get('last_name', '')
         )
+        
+        # Update profile
+        profile = Profile.objects.get(user=user)
+        profile.role = role
+        profile.entry_number = entry_number
+        profile.mobile_number = mobile_number
+        profile.webmail = webmail
+        profile.save()
+        
+        # Create approval request
+        ApprovalRequest.objects.create(user=user, requested_role=role)
+        
         return user
 
 class ProfileSerializer(serializers.ModelSerializer):
@@ -38,8 +60,20 @@ class ProfileSerializer(serializers.ModelSerializer):
                  'profile_pic', 'role', 'created_at', 'updated_at')
         read_only_fields = ('id', 'created_at', 'updated_at')
 
-
-    clickable_content = serializers.SerializerMethodField()
+class ApprovalRequestSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+    username = serializers.CharField(source='user.username', read_only=True)
+    email = serializers.CharField(source='user.email', read_only=True)
+    full_name = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = ApprovalRequest
+        fields = ('id', 'user', 'username', 'email', 'full_name', 'status', 'requested_role', 
+                 'message', 'created_at', 'updated_at', 'reviewed_by', 'review_comments')
+        read_only_fields = ('id', 'user', 'username', 'email', 'created_at', 'updated_at')
+    
+    def get_full_name(self, obj):
+        return f"{obj.user.first_name} {obj.user.last_name}".strip()
     
 class AnnouncementSerializer(serializers.ModelSerializer):
     formatted_content = serializers.SerializerMethodField()
@@ -133,12 +167,6 @@ class ContactSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'email', 'subject', 'message', 'created_at')
         read_only_fields = ('id', 'created_at')
 
-class EventSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Event
-        fields = ('id', 'title', 'date', 'description', 'location', 'image', 
-                 'is_featured', 'created_at', 'updated_at')
-        read_only_fields = ('id', 'created_at', 'updated_at') 
 
 class PYPSerializer(serializers.ModelSerializer):
     file_url = serializers.SerializerMethodField()

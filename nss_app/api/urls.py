@@ -3,11 +3,9 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     UserRegisterView, UserProfileView, api_index, login_view, logout_view,
     user_info, ContactViewSet, AnnouncementViewSet, DownloadViewSet, GalleryViewSet, 
-    BrochureViewSet, ReportViewSet, EventViewSet, PYPViewSet, STPViewSet, WTPViewSet,
+    BrochureViewSet, ReportViewSet, PYPViewSet, STPViewSet, WTPViewSet,
     PYRViewSet, STRViewSet, WTRViewSet, get_csrf_token,
     GalleryList, GalleryDetail, GalleryDownload,
-    BrochureList, BrochureDetail, BrochureDownload,
-    ReportList, ReportDetail, ReportDownload,
     PYPList, PYPDetail, PYPDownload,
     STPList, STPDetail, STPDownload,
     WTPList, WTPDetail, WTPDownload,
@@ -23,7 +21,6 @@ router.register(r'downloads', DownloadViewSet)
 router.register(r'gallery', GalleryViewSet)
 router.register(r'brochures', BrochureViewSet)
 router.register(r'reports', ReportViewSet)
-router.register(r'events', EventViewSet)
 router.register(r'pyp', PYPViewSet)
 router.register(r'stp', STPViewSet)
 router.register(r'wtp', WTPViewSet)

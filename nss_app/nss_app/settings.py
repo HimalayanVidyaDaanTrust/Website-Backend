@@ -24,7 +24,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-your-secret-key-here'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'api.himalayanvidyadaan.org', 'www.himalayanvidyadaan.org', 'himalayanvidyadaan.org', 'admin.himalayanvidyadaan.org','*']
 
@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'corsheaders',
     'api',
+    'django_cleanup.apps.CleanupConfig',
 ]
 
 MIDDLEWARE = [
@@ -53,6 +54,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'api.middleware.ApprovalCheckMiddleware'
 ]
 
 ROOT_URLCONF = 'nss_app.urls'
@@ -184,7 +186,7 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'iitiantejashvi@gmail.com'
-EMAIL_HOST_PASSWORD = 'tuem ihac atwd yjrd'
+EMAIL_HOST_PASSWORD = 'bihz dezh izlc nlwj'
 ADMIN_EMAIL = 'tejashvikumawat@gmail.com'  # Updated to the requested email
 
 # CSRF settings

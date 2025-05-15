@@ -21,8 +21,7 @@ from django.conf.urls.static import static
 from rest_framework.routers import DefaultRouter
 from api.views import (
     ContactViewSet, AnnouncementViewSet, DownloadViewSet, 
-    GalleryViewSet, BrochureViewSet, ReportViewSet, EventViewSet,PYPViewSet,STPViewSet,
-    get_csrf_token
+    GalleryViewSet, BrochureViewSet, ReportViewSet,PYPViewSet,STPViewSet,WTPViewSet,PYRViewSet,STRViewSet, WTRViewSet
 )
 
 # Create a router for non-prefixed endpoints
@@ -33,13 +32,15 @@ non_prefixed_router.register(r'downloads', DownloadViewSet)
 non_prefixed_router.register(r'gallery', GalleryViewSet)
 non_prefixed_router.register(r'brochures', BrochureViewSet)
 non_prefixed_router.register(r'reports', ReportViewSet)
-non_prefixed_router.register(r'events', EventViewSet)
 non_prefixed_router.register(r'pyp', PYPViewSet)
 non_prefixed_router.register(r'stp', STPViewSet)
+non_prefixed_router.register(r'wtp', WTPViewSet)
+non_prefixed_router.register(r'pyr', PYRViewSet)
+non_prefixed_router.register(r'str', STRViewSet)
+non_prefixed_router.register(r'wtr', WTRViewSet)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('api.urls')),  # All API endpoints with prefix
     path('', include(non_prefixed_router.urls)),  # Non-prefixed endpoints (like /contact/)
-    path('csrf/', get_csrf_token, name='csrf'),  # Add non-prefixed CSRF endpoint
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Profile, Announcement, Download, Gallery, Brochure, Report, Contact, Event,PYP,PYR,STP,STR,WTP,WTR
+from .models import Profile, Announcement, Download, Gallery, Brochure, Report, Contact,PYP,PYR,STP,STR,WTP,WTR
 
 @admin.register(Profile)
 class ProfileAdmin(admin.ModelAdmin):
@@ -83,9 +83,3 @@ class ContactAdmin(admin.ModelAdmin):
     list_filter = ('created_at',)
     readonly_fields = ('created_at',)
 
-@admin.register(Event)
-class EventAdmin(admin.ModelAdmin):
-    list_display = ('title', 'date', 'location', 'is_featured', 'created_at')
-    search_fields = ('title', 'description', 'location')
-    list_filter = ('is_featured', 'date', 'created_at')
-    list_editable = ('is_featured',) 

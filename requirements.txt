@@ -6,3 +6,5 @@ gunicorn
 whitenoise
 python-dotenv
 pillow
+djangorestframework-simplejwt
+django-cleanup
