@@ -12,7 +12,7 @@ from .views import (
     PYRList, PYRDetail, PYRDownload,
     STRList, STRDetail, STRDownload,
     WTRList, WTRDetail, WTRDownload,
-    CampViewSet,UpdateViewSet
+    CampViewSet,UpdateViewSet,StudentViewSet
 )
 
 router = DefaultRouter()
@@ -30,6 +30,7 @@ router.register(r'str', STRViewSet)
 router.register(r'wtr', WTRViewSet)
 router.register(r'camps', CampViewSet)
 router.register(r'updates', UpdateViewSet)
+router.register(r'students', StudentViewSet)
 
 
 urlpatterns = [
@@ -69,6 +70,7 @@ urlpatterns = [
     path('wtr-list/', WTRList.as_view(), name='wtr-list'),
     path('wtr-detail/<int:pk>/', WTRDetail.as_view(), name='wtr-detail'),
     path('wtr-download/<int:pk>/', WTRDownload.as_view(), name='wtr-download'),
+    path('camps/<int:camp_id>/students/', StudentViewSet.as_view({'get': 'list'}), name='camp-students'),
     
     
     

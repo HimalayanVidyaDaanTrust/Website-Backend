@@ -242,3 +242,37 @@ class Camp(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.year})"
+    
+class Student(models.Model):
+    STANDARD_CHOICES = [
+    ('Nursery', 'Nursery'),
+    ('LKG', 'LKG'),
+    ('UKG', 'UKG'),
+] + [(str(i), str(i)) for i in range(1, 11)] + [
+    ('11 (M)', '11 (M)'),
+    ('11 (B)', '11 (B)'),
+    ('12 (M)', '12 (M)'),
+    ('12 (B)', '12 (B)'),
+    ('Dropper', 'Dropper'),
+]
+
+    
+    name = models.CharField(max_length=200)
+    camp = models.ForeignKey(Camp, on_delete=models.CASCADE, related_name='students')
+    standard = models.CharField(max_length=10, choices=STANDARD_CHOICES)
+    registration_date = models.DateField(auto_now_add=True)
+    avatar = models.ImageField(upload_to='student_avatars/', blank=True, null=True)
+    
+    # Additional student information
+    email = models.EmailField(blank=True, null=True)
+    phone_number = models.CharField(max_length=15, blank=True, null=True)
+    address = models.TextField(blank=True, null=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"{self.name} - {self.standard} ({self.camp.name})"
+    
+    class Meta:
+        ordering = ['standard', 'name']

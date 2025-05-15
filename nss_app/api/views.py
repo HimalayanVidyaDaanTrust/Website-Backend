@@ -7,11 +7,11 @@ from django.contrib.auth.models import User
 from django.db import IntegrityError
 import traceback
 import logging
-from .models import Profile, Announcement, Download, Gallery, Brochure, Report, Contact,PYP,STP,WTP, PYR,STR,WTR,ApprovalRequest,Camp,Update
+from .models import Profile, Announcement, Download, Gallery, Brochure, Report, Contact,PYP,STP,WTP, PYR,STR,WTR,ApprovalRequest,Camp,Update,Student
 from .serializers import (
     UserSerializer, UserRegisterSerializer, ProfileSerializer,ApprovalRequestSerializer,
     AnnouncementSerializer, DownloadSerializer, GallerySerializer,
-    BrochureSerializer, ReportSerializer, ContactSerializer,PYPSerializer, STPSerializer,WTPSerializer,PYRSerializer,STRSerializer,WTRSerializer,CampSerializer,UpdateSerializer
+    BrochureSerializer, ReportSerializer, ContactSerializer,PYPSerializer, STPSerializer,WTPSerializer,PYRSerializer,STRSerializer,WTRSerializer,CampSerializer,UpdateSerializer,StudentSerializer
 )
 from django.http import FileResponse, Http404, JsonResponse
 from django.views import View
@@ -1105,6 +1105,20 @@ class CampViewSet(viewsets.ModelViewSet):
             serializer.save(camp=camp, author=request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(detail=True, methods=['get'])
+    def students(self, request, pk=None):
+        camp = self.get_object()
+        students = Student.objects.filter(camp=camp)
+        
+        # Filter by standard if provided
+        standard = request.query_params.get('standard')
+        if standard:
+            students = students.filter(standard=standard)
+        
+        serializer = StudentSerializer(students, many=True, context={'request': request})
+        return Response(serializer.data)
+
 
 class UpdateViewSet(viewsets.ModelViewSet):
     queryset = Update.objects.all()
@@ -1112,6 +1126,32 @@ class UpdateViewSet(viewsets.ModelViewSet):
     
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
+        
+# Add this to views.py
+class StudentViewSet(viewsets.ModelViewSet):
+    queryset = Student.objects.all()
+    serializer_class = StudentSerializer
+    
+    def get_queryset(self):
+        queryset = Student.objects.all()
+        
+        # Filter by camp if provided
+        camp_id = self.request.query_params.get('camp_id')
+        if camp_id:
+            queryset = queryset.filter(camp_id=camp_id)
+        
+        # Filter by standard if provided
+        standard = self.request.query_params.get('standard')
+        if standard:
+            queryset = queryset.filter(standard=standard)
+            
+        return queryset
+    
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context.update({"request": self.request})
+        return context
+
 
 # Simple view for API index
 @api_view(['GET'])

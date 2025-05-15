@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Profile, Announcement, Download, Gallery, Brochure, Report, Contact,PYP,PYR,STP,STR,WTP,WTR,Camp,Update
+from .models import Profile, Announcement, Download, Gallery, Brochure, Report, Contact,PYP,PYR,STP,STR,WTP,WTR,Camp,Update,Student
 
 @admin.register(Profile)
 class ProfileAdmin(admin.ModelAdmin):
@@ -83,15 +83,32 @@ class ContactAdmin(admin.ModelAdmin):
     list_filter = ('created_at',)
     readonly_fields = ('created_at',)
     
-@admin.register(Camp)
-class CampAdmin(admin.ModelAdmin):
-    list_display = ('name', 'year', 'location', 'total_students', 'created_at')
-    search_fields = ('name', 'location')
-    list_filter = ('year', 'created_at')
 
 @admin.register(Update)
 class UpdateAdmin(admin.ModelAdmin):
     list_display = ('author', 'camp', 'created_at')
     search_fields = ('text', 'author__username', 'camp__name')
     list_filter = ('created_at', 'camp')
+    
+@admin.register(Camp)
+class CampAdmin(admin.ModelAdmin):
+    list_display = ('name', 'year', 'location', 'total_students', 'created_at')
+    search_fields = ('name', 'location')
+    list_filter = ('year', 'created_at')
+    
+@admin.register(Student)
+class StudentAdmin(admin.ModelAdmin):
+    list_display = ('name', 'standard', 'camp', 'registration_date')
+    list_filter = ('camp', 'standard')
+    search_fields = ('name', 'email', 'phone_number')
+    date_hierarchy = 'registration_date'
+    fieldsets = [
+        (None, {'fields': ['name', 'standard', 'camp']}),
+        ('Contact Information', {'fields': ['email', 'phone_number', 'address']}),
+        ('Profile', {'fields': ['avatar']})
+    ]
 
+# If Camp admin isn't already registered, add this:
+class StudentInline(admin.TabularInline):
+    model = Student
+    extra = 0

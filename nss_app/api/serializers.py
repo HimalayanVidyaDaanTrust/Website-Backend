@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import Profile, Announcement, Download, Gallery, Brochure, Report, Contact,PYP,STP,WTP, PYR,STR,WTR,ApprovalRequest, Camp,Update
+from .models import Profile, Announcement, Download, Gallery, Brochure, Report, Contact,PYP,STP,WTP, PYR,STR,WTR,ApprovalRequest, Camp,Update,Student
 from django.conf import settings
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
@@ -287,3 +287,28 @@ class CampSerializer(serializers.ModelSerializer):
     class Meta:
         model = Camp
         fields = ['id', 'name', 'year', 'location', 'image', 'total_students', 'created_at', 'updated_at', 'updates']
+        
+# Add this to serializers.py
+class StudentSerializer(serializers.ModelSerializer):
+    avatar_url = serializers.SerializerMethodField()
+    camp_name = serializers.CharField(source='camp.name', read_only=True)
+    camp_location = serializers.CharField(source='camp.location', read_only=True)
+    registration_date_formatted = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Student
+        fields = ('id', 'name', 'camp', 'camp_name', 'camp_location', 'standard', 
+                  'registration_date', 'registration_date_formatted', 'avatar', 
+                  'avatar_url', 'email', 'phone_number', 'address', 'created_at', 'updated_at')
+        read_only_fields = ('id', 'created_at', 'updated_at')
+    
+    def get_avatar_url(self, obj):
+        if obj.avatar:
+            request = self.context.get('request')
+            if request is not None:
+                return request.build_absolute_uri(obj.avatar.url)
+            return f"{settings.MEDIA_URL}{obj.avatar}"
+        return None
+    
+    def get_registration_date_formatted(self, obj):
+        return obj.registration_date.strftime('%d-%m-%Y')
