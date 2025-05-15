@@ -7,11 +7,11 @@ from django.contrib.auth.models import User
 from django.db import IntegrityError
 import traceback
 import logging
-from .models import Profile, Announcement, Download, Gallery, Brochure, Report, Contact,PYP,STP,WTP, PYR,STR,WTR,ApprovalRequest
+from .models import Profile, Announcement, Download, Gallery, Brochure, Report, Contact,PYP,STP,WTP, PYR,STR,WTR,ApprovalRequest,Camp,Update
 from .serializers import (
     UserSerializer, UserRegisterSerializer, ProfileSerializer,ApprovalRequestSerializer,
     AnnouncementSerializer, DownloadSerializer, GallerySerializer,
-    BrochureSerializer, ReportSerializer, ContactSerializer,PYPSerializer, STPSerializer,WTPSerializer,PYRSerializer,STRSerializer,WTRSerializer
+    BrochureSerializer, ReportSerializer, ContactSerializer,PYPSerializer, STPSerializer,WTPSerializer,PYRSerializer,STRSerializer,WTRSerializer,CampSerializer,UpdateSerializer
 )
 from django.http import FileResponse, Http404, JsonResponse
 from django.views import View
@@ -1084,6 +1084,34 @@ class WTRDownload(generics.RetrieveAPIView):
             return response
         except Exception as e:
             raise Http404(f"Error serving file: {str(e)}")
+
+class CampViewSet(viewsets.ModelViewSet):
+    queryset = Camp.objects.all()
+    serializer_class = CampSerializer
+    
+    @action(detail=True, methods=['get'])
+    def updates(self, request, pk=None):
+        camp = self.get_object()
+        updates = camp.updates.all()
+        serializer = UpdateSerializer(updates, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=True, methods=['post'])
+    def add_update(self, request, pk=None):
+        camp = self.get_object()
+        serializer = UpdateSerializer(data=request.data)
+        
+        if serializer.is_valid():
+            serializer.save(camp=camp, author=request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class UpdateViewSet(viewsets.ModelViewSet):
+    queryset = Update.objects.all()
+    serializer_class = UpdateSerializer
+    
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
 
 # Simple view for API index
 @api_view(['GET'])

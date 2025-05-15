@@ -11,7 +11,8 @@ from .views import (
     WTPList, WTPDetail, WTPDownload,
     PYRList, PYRDetail, PYRDownload,
     STRList, STRDetail, STRDownload,
-    WTRList, WTRDetail, WTRDownload
+    WTRList, WTRDetail, WTRDownload,
+    CampViewSet,UpdateViewSet
 )
 
 router = DefaultRouter()
@@ -27,6 +28,9 @@ router.register(r'wtp', WTPViewSet)
 router.register(r'pyr', PYRViewSet)
 router.register(r'str', STRViewSet)
 router.register(r'wtr', WTRViewSet)
+router.register(r'camps', CampViewSet)
+router.register(r'updates', UpdateViewSet)
+
 
 urlpatterns = [
     path('', api_index, name='api-index'),
@@ -65,6 +69,9 @@ urlpatterns = [
     path('wtr-list/', WTRList.as_view(), name='wtr-list'),
     path('wtr-detail/<int:pk>/', WTRDetail.as_view(), name='wtr-detail'),
     path('wtr-download/<int:pk>/', WTRDownload.as_view(), name='wtr-download'),
+    
+    
+    
     # Add similar patterns for other class-based views
     # ...
 ] + router.urls

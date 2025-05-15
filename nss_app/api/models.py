@@ -67,7 +67,6 @@ class Gallery(models.Model):
         ('doubts', 'Doubts'),
         ('exams', 'Exams'),
     ]
-
     title = models.CharField(max_length=200)
     location = models.CharField(max_length=100)
     image = models.ImageField(upload_to='gallery/')
@@ -217,3 +216,29 @@ class WTR(models.Model):
     class Meta:
         ordering = ['result_date', '-created_at']
         verbose_name = "Weekly Test Result"
+        
+#updates for a camp admin frontend        
+class Update(models.Model):
+    camp = models.ForeignKey('Camp', on_delete=models.CASCADE, related_name='updates')
+    text = models.TextField()
+    author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='updates')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Update by {self.author.username} for {self.camp.name}"
+    
+class Camp(models.Model):
+    name = models.CharField(max_length=200)
+    year = models.IntegerField()
+    location = models.CharField(max_length=200)
+    image = models.ImageField(upload_to='camp_images/', blank=True, null=True)
+    total_students = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.name} ({self.year})"

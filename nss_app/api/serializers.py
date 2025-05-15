@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import Profile, Announcement, Download, Gallery, Brochure, Report, Contact,PYP,STP,WTP, PYR,STR,WTR,ApprovalRequest
+from .models import Profile, Announcement, Download, Gallery, Brochure, Report, Contact,PYP,STP,WTP, PYR,STR,WTR,ApprovalRequest, Camp,Update
 from django.conf import settings
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
@@ -265,3 +265,25 @@ class WTRSerializer(serializers.ModelSerializer):
                 return request.build_absolute_uri(obj.file.url)
             return f"{settings.MEDIA_URL}{obj.file}"
         return None
+    
+class UpdateSerializer(serializers.ModelSerializer):
+    author_name = serializers.SerializerMethodField()
+    time = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Update
+        fields = ['id', 'camp', 'text', 'author', 'author_name', 'created_at', 'updated_at', 'time']
+        read_only_fields = ['author_name', 'time']
+    
+    def get_author_name(self, obj):
+        return obj.author.get_full_name() or obj.author.username
+    
+    def get_time(self, obj):
+        return obj.updated_at.strftime('%I:%M %p')
+
+class CampSerializer(serializers.ModelSerializer):
+    updates = UpdateSerializer(many=True, read_only=True)
+    
+    class Meta:
+        model = Camp
+        fields = ['id', 'name', 'year', 'location', 'image', 'total_students', 'created_at', 'updated_at', 'updates']

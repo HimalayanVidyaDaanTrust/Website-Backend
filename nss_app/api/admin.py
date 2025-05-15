@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Profile, Announcement, Download, Gallery, Brochure, Report, Contact,PYP,PYR,STP,STR,WTP,WTR
+from .models import Profile, Announcement, Download, Gallery, Brochure, Report, Contact,PYP,PYR,STP,STR,WTP,WTR,Camp,Update
 
 @admin.register(Profile)
 class ProfileAdmin(admin.ModelAdmin):
@@ -82,4 +82,16 @@ class ContactAdmin(admin.ModelAdmin):
     search_fields = ('name', 'email', 'subject', 'message')
     list_filter = ('created_at',)
     readonly_fields = ('created_at',)
+    
+@admin.register(Camp)
+class CampAdmin(admin.ModelAdmin):
+    list_display = ('name', 'year', 'location', 'total_students', 'created_at')
+    search_fields = ('name', 'location')
+    list_filter = ('year', 'created_at')
+
+@admin.register(Update)
+class UpdateAdmin(admin.ModelAdmin):
+    list_display = ('author', 'camp', 'created_at')
+    search_fields = ('text', 'author__username', 'camp__name')
+    list_filter = ('created_at', 'camp')
 
