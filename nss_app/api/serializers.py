@@ -113,21 +113,6 @@ class DownloadSerializer(serializers.ModelSerializer):
         fields = ('id', 'title', 'file', 'description', 'category', 'uploaded_date')
         read_only_fields = ('id', 'uploaded_date')
 
-class GallerySerializer(serializers.ModelSerializer):
-    image_url = serializers.SerializerMethodField()
-    
-    class Meta:
-        model = Gallery
-        fields = ('id', 'title', 'location', 'image', 'image_url', 'description', 'date', 'type', 'year')
-        read_only_fields = ('id',)
-    
-    def get_image_url(self, obj):
-        if obj.image:
-            request = self.context.get('request')
-            if request is not None:
-                return request.build_absolute_uri(obj.image.url)
-            return f"{settings.MEDIA_URL}{obj.image}"
-        return None
 
 class BrochureSerializer(serializers.ModelSerializer):
     file_url = serializers.SerializerMethodField()
@@ -267,13 +252,11 @@ class WTRSerializer(serializers.ModelSerializer):
         return None
     
 class UpdateSerializer(serializers.ModelSerializer):
-    author_name = serializers.SerializerMethodField()
-    time = serializers.SerializerMethodField()
-    
+    author_name = serializers.SerializerMethodField()    
     class Meta:
         model = Update
-        fields = ['id', 'camp', 'text', 'author', 'author_name', 'created_at', 'updated_at', 'time']
-        read_only_fields = ['author_name', 'time']
+        fields = ['id', 'camp', 'text', 'author', 'author_name', 'created_at', 'updated_at', 'time','title','venue']
+        read_only_fields = ['author_name', 'created_at','updated_at']
     
     def get_author_name(self, obj):
         return obj.author.get_full_name() or obj.author.username
@@ -282,13 +265,35 @@ class UpdateSerializer(serializers.ModelSerializer):
         return obj.updated_at.strftime('%I:%M %p')
 
 class CampSerializer(serializers.ModelSerializer):
+    location = serializers.CharField(read_only=True)
     updates = UpdateSerializer(many=True, read_only=True)
+    student_count = serializers.IntegerField(source='total_students', read_only=True)
     
     class Meta:
         model = Camp
-        fields = ['id', 'name', 'year', 'location', 'image', 'total_students', 'created_at', 'updated_at', 'updates']
-        
-# Add this to serializers.py
+        fields = ['id', 'name', 'year', 'city', 'state', 'location', 'image', 
+                 'total_students', 'student_count', 'created_at', 'updated_at', 'updates']
+
+class GallerySerializer(serializers.ModelSerializer):
+    image_url = serializers.SerializerMethodField()
+    camp_name = serializers.CharField(source='camp.name', read_only=True)
+    location = serializers.CharField(read_only=True)
+    year = serializers.IntegerField(read_only=True)
+    
+    class Meta:
+        model = Gallery
+        fields = ('id', 'title', 'camp', 'camp_name', 'location', 'image', 'image_url', 
+                 'description', 'date', 'type', 'year', 'student_count')
+        read_only_fields = ('id', 'location', 'year', 'student_count')
+
+    def get_image_url(self, obj):
+        if obj.image:
+            request = self.context.get('request')
+            if request is not None:
+                return request.build_absolute_uri(obj.image.url)
+            return f"{settings.MEDIA_URL}{obj.image}"
+        return None
+
 class StudentSerializer(serializers.ModelSerializer):
     avatar_url = serializers.SerializerMethodField()
     camp_name = serializers.CharField(source='camp.name', read_only=True)
@@ -297,11 +302,11 @@ class StudentSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Student
-        fields = ('id', 'name', 'camp', 'camp_name', 'camp_location', 'standard', 
-                  'registration_date', 'registration_date_formatted', 'avatar', 
-                  'avatar_url', 'email', 'phone_number', 'address', 'created_at', 'updated_at')
-        read_only_fields = ('id', 'created_at', 'updated_at')
-    
+        fields = ('id', 'name', 'camp', 'camp_name', 'camp_location', 'standard',
+                 'registration_date', 'registration_date_formatted', 'avatar',
+                 'avatar_url', 'email', 'phone_number', 'address', 'created_at', 'updated_at')
+        read_only_fields = ('id', 'created_at', 'updated_at', 'camp_name', 'camp_location')
+
     def get_avatar_url(self, obj):
         if obj.avatar:
             request = self.context.get('request')
@@ -309,6 +314,6 @@ class StudentSerializer(serializers.ModelSerializer):
                 return request.build_absolute_uri(obj.avatar.url)
             return f"{settings.MEDIA_URL}{obj.avatar}"
         return None
-    
+
     def get_registration_date_formatted(self, obj):
         return obj.registration_date.strftime('%d-%m-%Y')

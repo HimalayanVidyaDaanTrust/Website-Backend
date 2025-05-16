@@ -1,8 +1,8 @@
 from django.db.models.signals import post_save,post_delete, pre_save
 from django.dispatch import receiver
 from django.contrib.auth.models import User
-from .models import Profile
-from django.db import models
+from .models import Profile, Student,Gallery,Camp
+from django.db import models,transaction
 
 @receiver(post_save, sender=User)
 def create_profile(sender, instance, created, **kwargs):
@@ -57,3 +57,37 @@ def delete_file_if_unused(model, instance, field, instance_file_field):
     
     if not other_refs_exist and instance_file_field.name:
         instance_file_field.delete(False)
+        
+@receiver(post_save, sender=Student)
+def update_student_count_on_save(sender, instance, created, **kwargs):
+    """
+    When a student is created, update the student count in the camp
+    and all associated gallery items
+    """
+    if created:  # Only increment count on creation
+        with transaction.atomic():
+            # Update camp's total_students count
+            camp = instance.camp
+            camp.total_students = camp.students.count()
+            camp.save(update_fields=['total_students'])
+            
+            # Update all gallery items for this camp
+            Gallery.objects.filter(camp=camp).update(student_count=camp.total_students)
+
+@receiver(post_delete, sender=Student)
+def update_student_count_on_delete(sender, instance, **kwargs):
+    """
+    When a student is deleted, update the student count in the camp
+    and all associated gallery items
+    """
+    try:
+        with transaction.atomic():
+            camp = instance.camp
+            camp.total_students = camp.students.count()
+            camp.save(update_fields=['total_students'])
+            
+            # Update all gallery items for this camp
+            Gallery.objects.filter(camp=camp).update(student_count=camp.total_students)
+    except Camp.DoesNotExist:
+        # Camp was deleted, nothing to update
+        pass

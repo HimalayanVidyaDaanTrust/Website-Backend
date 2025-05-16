@@ -288,9 +288,36 @@ class GalleryViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = Gallery.objects.all().order_by('-date')
+        
+        # Filter by camp ID
+        camp_id = self.request.query_params.get('camp_id')
+        if camp_id:
+            queryset = queryset.filter(camp_id=camp_id)
+            
+        # Filter by location (for backward compatibility)
         location = self.request.query_params.get('location')
         if location:
-            queryset = queryset.filter(location=location)
+            queryset = queryset.filter(location__icontains=location)
+            
+        # Filter by city and state from camp
+        city = self.request.query_params.get('city')
+        if city:
+            queryset = queryset.filter(camp__city__iexact=city)
+            
+        state = self.request.query_params.get('state')
+        if state:
+            queryset = queryset.filter(camp__state__iexact=state)
+            
+        # Filter by type
+        type_param = self.request.query_params.get('type')
+        if type_param:
+            queryset = queryset.filter(type=type_param)
+            
+        # Filter by year
+        year = self.request.query_params.get('year')
+        if year:
+            queryset = queryset.filter(year=year)
+            
         return queryset
     
     def get_permissions(self):
@@ -307,7 +334,7 @@ class GalleryViewSet(viewsets.ModelViewSet):
     def by_type(self, request):
         type_param = request.query_params.get('type')
         if type_param:
-            queryset = self.queryset.filter(type=type_param)
+            queryset = self.get_queryset().filter(type=type_param)
             serializer = self.get_serializer(queryset, many=True)
             return Response(serializer.data)
         return Response({'error': 'Type parameter is required'}, status=status.HTTP_400_BAD_REQUEST)
@@ -325,6 +352,14 @@ class GalleryViewSet(viewsets.ModelViewSet):
             response['Content-Disposition'] = f'attachment; filename="{os.path.basename(file_path)}"'
             return response
         return Response({"error": "File not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+    @action(detail=False, methods=['get'])
+    def camps(self, request):
+        """Get list of all camps that have gallery items"""
+        camps = Camp.objects.filter(gallery_images__isnull=False).distinct()
+        from .serializers import CampSerializer
+        serializer = CampSerializer(camps, many=True, context={'request': request})
+        return Response(serializer.data)
 
 class FileDownloadView(View):
     def get(self, request, file_path):
@@ -1086,39 +1121,41 @@ class WTRDownload(generics.RetrieveAPIView):
             raise Http404(f"Error serving file: {str(e)}")
 
 class CampViewSet(viewsets.ModelViewSet):
-    queryset = Camp.objects.all()
+    queryset = Camp.objects.all().order_by('-year', 'state', 'city')
     serializer_class = CampSerializer
     
-    @action(detail=True, methods=['get'])
-    def updates(self, request, pk=None):
-        camp = self.get_object()
-        updates = camp.updates.all()
-        serializer = UpdateSerializer(updates, many=True)
-        return Response(serializer.data)
+    def get_queryset(self):
+        queryset = Camp.objects.all()
+        
+        # Filter by state
+        state = self.request.query_params.get('state')
+        if state:
+            queryset = queryset.filter(state__iexact=state)
+            
+        # Filter by city
+        city = self.request.query_params.get('city')
+        if city:
+            queryset = queryset.filter(city__iexact=city)
+            
+        # Filter by year
+        year = self.request.query_params.get('year')
+        if year:
+            queryset = queryset.filter(year=year)
+            
+        return queryset
     
-    @action(detail=True, methods=['post'])
-    def add_update(self, request, pk=None):
-        camp = self.get_object()
-        serializer = UpdateSerializer(data=request.data)
-        
-        if serializer.is_valid():
-            serializer.save(camp=camp, author=request.user)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
     @action(detail=True, methods=['get'])
-    def students(self, request, pk=None):
+    def gallery(self, request, pk=None):
         camp = self.get_object()
-        students = Student.objects.filter(camp=camp)
+        galleries = Gallery.objects.filter(camp=camp)
         
-        # Filter by standard if provided
-        standard = request.query_params.get('standard')
-        if standard:
-            students = students.filter(standard=standard)
-        
-        serializer = StudentSerializer(students, many=True, context={'request': request})
+        # Apply additional filters
+        type_param = request.query_params.get('type')
+        if type_param:
+            galleries = galleries.filter(type=type_param)
+            
+        serializer = GallerySerializer(galleries, many=True, context={'request': request})
         return Response(serializer.data)
-
 
 class UpdateViewSet(viewsets.ModelViewSet):
     queryset = Update.objects.all()

@@ -61,23 +61,6 @@ class Download(models.Model):
     def __str__(self):
         return self.title
 
-class Gallery(models.Model):
-    TYPE_CHOICES = [
-        ('regularclasses', 'Regular Classes'),
-        ('doubts', 'Doubts'),
-        ('exams', 'Exams'),
-    ]
-    title = models.CharField(max_length=200)
-    location = models.CharField(max_length=100)
-    image = models.ImageField(upload_to='gallery/')
-    description = models.TextField(blank=True, null=True)
-    date = models.DateField()
-    type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='regularclasses')
-    year = models.IntegerField(default=2024)
-
-    def __str__(self):
-        return f"{self.title} - {self.location} ({self.year})"
-
 class Brochure(models.Model):
     title = models.CharField(max_length=200)
     file = models.FileField(upload_to='brochures/')
@@ -220,46 +203,106 @@ class WTR(models.Model):
 #updates for a camp admin frontend        
 class Update(models.Model):
     camp = models.ForeignKey('Camp', on_delete=models.CASCADE, related_name='updates')
+    title = models.CharField(max_length=200)
     text = models.TextField()
     author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='updates')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    venue = models.CharField(max_length=200, blank=True, null=True)
+    time = models.DateTimeField(blank=True, null=True)
+
 
     class Meta:
         ordering = ['-created_at']
 
     def __str__(self):
         return f"Update by {self.author.username} for {self.camp.name}"
-    
+ 
 class Camp(models.Model):
     name = models.CharField(max_length=200)
     year = models.IntegerField()
-    location = models.CharField(max_length=200)
+    city = models.CharField(max_length=100)
+    state = models.CharField(max_length=100)
+    location = models.CharField(max_length=200, editable=False)
     image = models.ImageField(upload_to='camp_images/', blank=True, null=True)
-    total_students = models.IntegerField(default=0)
+    # This is the single source of truth for student count
+    total_students = models.IntegerField(default=0,editable=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
-    def __str__(self):
-        return f"{self.name} ({self.year})"
     
+    def save(self, *args, **kwargs):
+        # Automatically generate the location string from city and state
+        self.location = f"{self.city}, {self.state}"
+        super().save(*args, **kwargs)
+    
+    def __str__(self):
+        return f"{self.name} - {self.location} ({self.year})"
+    
+    class Meta:
+        indexes = [
+            models.Index(fields=['city']),
+            models.Index(fields=['state']),
+            models.Index(fields=['year']),
+        ]
+        ordering = ['-year', 'state', 'city']
+
+class Gallery(models.Model):
+    TYPE_CHOICES = [
+        ('regularclasses', 'Regular Classes'),
+        ('doubts', 'Doubts'),
+        ('exams', 'Exams'),
+    ]
+    
+    title = models.CharField(max_length=200)
+    camp = models.ForeignKey(Camp, on_delete=models.CASCADE, related_name='gallery_images')
+    # Keep location for backward compatibility, but make it computed from camp
+    location = models.CharField(max_length=100, db_index=True, editable=False)
+    image = models.ImageField(upload_to='gallery/')
+    description = models.TextField(blank=True, null=True)
+    date = models.DateField()
+    type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='regularclasses')
+    year = models.IntegerField(editable=False)  # Will be set from camp's year
+    # Make student_count read-only - it will be updated by signals
+    student_count = models.PositiveIntegerField(default=0, editable=False)
+    
+    def save(self, *args, **kwargs):
+        # Set location and year from the camp
+        if self.camp:
+            self.location = self.camp.location
+            self.year = self.camp.year
+            # Set student_count from camp's total_students
+            self.student_count = self.camp.total_students
+        super().save(*args, **kwargs)
+    
+    def __str__(self):
+        return f"{self.title} - {self.location} ({self.year})"
+    
+    class Meta:
+        indexes = [
+            models.Index(fields=['location']),
+            models.Index(fields=['type']),
+            models.Index(fields=['year']),
+            models.Index(fields=['date']),
+        ]
+        ordering = ['-date']
+
 class Student(models.Model):
     STANDARD_CHOICES = [
-    ('Nursery', 'Nursery'),
-    ('LKG', 'LKG'),
-    ('UKG', 'UKG'),
-] + [(str(i), str(i)) for i in range(1, 11)] + [
-    ('11 (M)', '11 (M)'),
-    ('11 (B)', '11 (B)'),
-    ('12 (M)', '12 (M)'),
-    ('12 (B)', '12 (B)'),
-    ('Dropper', 'Dropper'),
-]
-
+        ('Nursery', 'Nursery'),
+        ('LKG', 'LKG'),
+        ('UKG', 'UKG'),
+    ] + [(str(i), str(i)) for i in range(1, 11)] + [
+        ('11 (M)', '11 (M)'),
+        ('11 (B)', '11 (B)'),
+        ('12 (M)', '12 (M)'),
+        ('12 (B)', '12 (B)'),
+        ('Dropper', 'Dropper'),
+    ]
     
-    name = models.CharField(max_length=200)
+    name = models.CharField(max_length=200, db_index=True)
+    # Link student directly to camp instead of location
     camp = models.ForeignKey(Camp, on_delete=models.CASCADE, related_name='students')
-    standard = models.CharField(max_length=10, choices=STANDARD_CHOICES)
+    standard = models.CharField(max_length=10, choices=STANDARD_CHOICES, db_index=True)
     registration_date = models.DateField(auto_now_add=True)
     avatar = models.ImageField(upload_to='student_avatars/', blank=True, null=True)
     
@@ -267,12 +310,15 @@ class Student(models.Model):
     email = models.EmailField(blank=True, null=True)
     phone_number = models.CharField(max_length=15, blank=True, null=True)
     address = models.TextField(blank=True, null=True)
-    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
+    class Meta:
+        indexes = [
+            models.Index(fields=['name']),
+            models.Index(fields=['registration_date']),
+        ]
+        ordering = ['standard', 'name']
+    
     def __str__(self):
         return f"{self.name} - {self.standard} ({self.camp.name})"
-    
-    class Meta:
-        ordering = ['standard', 'name']
