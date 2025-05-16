@@ -219,7 +219,7 @@ class Update(models.Model):
         return f"Update by {self.author.username} for {self.camp.name}"
  
 class Camp(models.Model):
-    name = models.CharField(max_length=200)
+    title = models.CharField(max_length=200)
     year = models.IntegerField()
     city = models.CharField(max_length=100)
     state = models.CharField(max_length=100)
@@ -236,7 +236,7 @@ class Camp(models.Model):
         super().save(*args, **kwargs)
     
     def __str__(self):
-        return f"{self.name} - {self.location} ({self.year})"
+        return f"{self.title} - {self.location} ({self.year})"
     
     class Meta:
         indexes = [
@@ -321,4 +321,4 @@ class Student(models.Model):
         ordering = ['standard', 'name']
     
     def __str__(self):
-        return f"{self.name} - {self.standard} ({self.camp.name})"
+        return f"{self.name} - {self.standard} ({self.camp.title})"

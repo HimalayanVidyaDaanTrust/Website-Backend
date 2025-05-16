@@ -92,8 +92,8 @@ class UpdateAdmin(admin.ModelAdmin):
     
 @admin.register(Camp)
 class CampAdmin(admin.ModelAdmin):
-    list_display = ('name', 'year', 'location', 'total_students', 'created_at')
-    search_fields = ('name', 'location')
+    list_display = ('title', 'year', 'location', 'total_students', 'created_at')
+    search_fields = ('title', 'location')
     list_filter = ('year', 'created_at')
     
 @admin.register(Student)

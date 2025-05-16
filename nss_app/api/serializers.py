@@ -271,7 +271,7 @@ class CampSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Camp
-        fields = ['id', 'name', 'year', 'city', 'state', 'location', 'image', 
+        fields = ['id', 'title', 'year', 'city', 'state', 'location', 'image', 
                  'total_students', 'student_count', 'created_at', 'updated_at', 'updates']
 
 class GallerySerializer(serializers.ModelSerializer):
