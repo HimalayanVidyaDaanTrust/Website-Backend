@@ -1215,4 +1215,19 @@ def logout_view(request):
         return Response({'message': 'Logout successful'})
     return Response({'error': 'Method not allowed'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
-
+@api_view(['POST'])
+@permission_classes([permissions.AllowAny])
+def student_register(request):
+    """
+    API endpoint for student registration
+    """
+    # Add the registration date if not provided
+    if 'registration_date' not in request.data:
+        from datetime import date
+        request.data['registration_date'] = date.today().isoformat()
+        
+    serializer = StudentSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

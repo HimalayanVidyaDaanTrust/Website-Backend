@@ -296,15 +296,21 @@ class GallerySerializer(serializers.ModelSerializer):
 
 class StudentSerializer(serializers.ModelSerializer):
     avatar_url = serializers.SerializerMethodField()
-    camp_name = serializers.CharField(source='camp.name', read_only=True)
+    camp_name = serializers.CharField(source='camp.title', read_only=True)
     camp_location = serializers.CharField(source='camp.location', read_only=True)
     registration_date_formatted = serializers.SerializerMethodField()
-    
+
     class Meta:
         model = Student
         fields = ('id', 'name', 'camp', 'camp_name', 'camp_location', 'standard',
-                 'registration_date', 'registration_date_formatted', 'avatar',
-                 'avatar_url', 'email', 'phone_number', 'address', 'created_at', 'updated_at')
+                  'registration_date', 'registration_date_formatted', 'avatar',
+                  'avatar_url', 'email', 'phone_number', 'address', 'school_name',
+                  # Parental details
+                  'father_name', 'father_occupation', 'father_phone_number',
+                  'mother_name', 'mother_occupation', 'mother_phone_number',
+                  # Principal details
+                  'principal_name', 'principal_phone_number',
+                  'created_at', 'updated_at')
         read_only_fields = ('id', 'created_at', 'updated_at', 'camp_name', 'camp_location')
 
     def get_avatar_url(self, obj):

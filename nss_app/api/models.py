@@ -299,19 +299,32 @@ class Student(models.Model):
         ('Dropper', 'Dropper'),
     ]
     
-    name = models.CharField(max_length=200, db_index=True)
-    # Link student directly to camp instead of location
     camp = models.ForeignKey(Camp, on_delete=models.CASCADE, related_name='students')
-    standard = models.CharField(max_length=10, choices=STANDARD_CHOICES, db_index=True)
-    registration_date = models.DateField(auto_now_add=True)
     avatar = models.ImageField(upload_to='student_avatars/', blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    registration_date = models.DateField(auto_now_add=True)
     
-    # Additional student information
+    # Personal details
+    name = models.CharField(max_length=200, db_index=True)
+    standard = models.CharField(max_length=10, choices=STANDARD_CHOICES, db_index=True)
     email = models.EmailField(blank=True, null=True)
     phone_number = models.CharField(max_length=15, blank=True, null=True)
     address = models.TextField(blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    school_name = models.CharField(max_length=200, db_index=True)
+    
+    # Parental Details
+    father_name = models.CharField(max_length=200, db_index=True)
+    father_occupation = models.CharField(max_length=200, db_index=True)
+    father_phone_number = models.CharField(max_length=15, blank=True, null=True)
+    mother_name = models.CharField(max_length=200, db_index=True)
+    mother_occupation = models.CharField(max_length=200, db_index=True)
+    mother_phone_number = models.CharField(max_length=15, blank=True, null=True)
+    
+    # Principal Details
+    principal_name = models.CharField(max_length=200, db_index=True)
+    principal_phone_number = models.CharField(max_length=15, blank=True, null=True)
+    
     
     class Meta:
         indexes = [

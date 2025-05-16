@@ -124,16 +124,22 @@ class CampAdmin(admin.ModelAdmin):
     
 @admin.register(Student)
 class StudentAdmin(admin.ModelAdmin):
-    list_display = ('name', 'standard', 'camp', 'registration_date')
-    list_filter = ('camp', 'standard')
-    search_fields = ('name', 'email', 'phone_number')
+    list_display = ('name', 'standard', 'camp', 'school_name', 'registration_date')
+    list_filter = ('camp', 'standard', 'registration_date')
+    search_fields = ('name', 'email', 'phone_number', 'father_name', 'mother_name', 'principal_name', 'school_name')
     date_hierarchy = 'registration_date'
+    
     fieldsets = [
-        (None, {'fields': ['name', 'standard', 'camp']}),
+        (None, {'fields': ['name', 'standard', 'camp', 'school_name']}),
         ('Contact Information', {'fields': ['email', 'phone_number', 'address']}),
-        ('Profile', {'fields': ['avatar']})
+        ('Parent Information', {'fields': [
+            'father_name', 'father_occupation', 'father_phone_number',
+            'mother_name', 'mother_occupation', 'mother_phone_number'
+        ]}),
+        ('Principal Information', {'fields': ['principal_name', 'principal_phone_number']}),
+        ('Profile', {'fields': ['avatar']}),
     ]
-
+    
 # If Camp admin isn't already registered, add this:
 class StudentInline(admin.TabularInline):
     model = Student
