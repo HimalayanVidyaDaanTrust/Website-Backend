@@ -216,7 +216,7 @@ class Update(models.Model):
         ordering = ['-created_at']
 
     def __str__(self):
-        return f"Update by {self.author.username} for {self.camp.name}"
+        return f"Update by {self.author.username} for {self.camp.title}"
  
 class Camp(models.Model):
     title = models.CharField(max_length=200)

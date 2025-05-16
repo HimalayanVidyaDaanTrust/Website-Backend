@@ -86,9 +86,35 @@ class ContactAdmin(admin.ModelAdmin):
 
 @admin.register(Update)
 class UpdateAdmin(admin.ModelAdmin):
-    list_display = ('author', 'camp', 'created_at')
-    search_fields = ('text', 'author__username', 'camp__name')
-    list_filter = ('created_at', 'camp')
+    # Update list_display to include title, venue, and time fields
+    list_display = ('title', 'author', 'camp', 'venue', 'time', 'created_at')
+    
+    # Update search_fields to include title and venue
+    search_fields = ('title', 'text', 'venue', 'author__username', 'camp__name')
+    
+    # Update list_filter to include time field
+    list_filter = ('created_at', 'updated_at', 'time', 'camp')
+    
+    # Add date hierarchy for better date navigation
+    date_hierarchy = 'created_at'
+    
+    # Add fieldsets for better organization in the edit form
+    fieldsets = (
+        ('Basic Information', {
+            'fields': ('title', 'text', 'camp', 'author')
+        }),
+        ('Event Details', {
+            'fields': ('venue', 'time')
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        })
+    )
+    
+    # Make created_at and updated_at read-only
+    readonly_fields = ('created_at', 'updated_at')
+
     
 @admin.register(Camp)
 class CampAdmin(admin.ModelAdmin):
