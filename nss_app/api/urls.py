@@ -1,5 +1,6 @@
 from django.urls import path
 from rest_framework.routers import DefaultRouter
+
 from .views import (
     UserRegisterView, UserProfileView, api_index, login_view, logout_view,
     user_info, ContactViewSet, AnnouncementViewSet, DownloadViewSet, GalleryViewSet, 
@@ -13,7 +14,7 @@ from .views import (
     STRList, STRDetail, STRDownload,
     WTRList, WTRDetail, WTRDownload,
     CampViewSet,UpdateViewSet,StudentViewSet,
-    student_register
+    student_register,
 )
 
 router = DefaultRouter()
@@ -71,8 +72,8 @@ urlpatterns = [
     path('wtr-list/', WTRList.as_view(), name='wtr-list'),
     path('wtr-detail/<int:pk>/', WTRDetail.as_view(), name='wtr-detail'),
     path('wtr-download/<int:pk>/', WTRDownload.as_view(), name='wtr-download'),
-    path('camps/<int:camp_id>/students/', StudentViewSet.as_view({'get': 'list'}), name='camp-students'),
-    path('camps/<int:camp_id>/updates/', UpdateViewSet.as_view({'get': 'list'}), name='camp-students'),
+    path('camps/<int:camp_id>/students/', StudentViewSet.as_view({'get': 'list', 'post': 'create'}), name='camp-students'),
+    path('camps/<int:camp_id>/updates/', UpdateViewSet.as_view({'get': 'list'}), name='camp-updates'),
     path('api/student-register/', student_register, name='student-register'),
     
     

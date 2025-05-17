@@ -2,6 +2,7 @@ from rest_framework import viewsets, permissions, status, generics, renderers
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.views import APIView
+from rest_framework.permissions import AllowAny
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 from django.contrib.auth.models import User
 from django.db import IntegrityError
@@ -1119,10 +1120,12 @@ class WTRDownload(generics.RetrieveAPIView):
             return response
         except Exception as e:
             raise Http404(f"Error serving file: {str(e)}")
-
+        
+@method_decorator(csrf_exempt, name='dispatch')
 class CampViewSet(viewsets.ModelViewSet):
     queryset = Camp.objects.all().order_by('-year', 'state', 'city')
     serializer_class = CampSerializer
+    permission_classes = [AllowAny]
     
     def get_queryset(self):
         queryset = Camp.objects.all()
@@ -1165,10 +1168,19 @@ class UpdateViewSet(viewsets.ModelViewSet):
         serializer.save(author=self.request.user)
         
 # Add this to views.py
+@method_decorator(csrf_exempt, name='dispatch')
 class StudentViewSet(viewsets.ModelViewSet):
     queryset = Student.objects.all()
     serializer_class = StudentSerializer
-    
+    permission_classes = [AllowAny] 
+    def create(self, request, *args, **kwargs):
+    # Get the camp_id from the URL
+        camp_id = self.kwargs.get('camp_id')
+        if camp_id:
+            # Add the camp_id to the request data
+            request.data['camp'] = camp_id
+        return super().create(request, *args, **kwargs)
+
     def get_queryset(self):
         queryset = Student.objects.all()
         
@@ -1217,6 +1229,7 @@ def logout_view(request):
 
 @api_view(['POST'])
 @permission_classes([permissions.AllowAny])
+@method_decorator(csrf_exempt, name='dispatch')
 def student_register(request):
     """
     API endpoint for student registration
