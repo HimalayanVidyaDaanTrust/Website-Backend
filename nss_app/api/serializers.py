@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import Profile, Announcement, Download, Gallery, Brochure, Report, Contact,PYP,STP,WTP, PYR,STR,WTR,ApprovalRequest, Camp,Update,Student
+from .models import Profile, Announcement, Download, Gallery, Brochure, Report, Contact,ApprovalRequest, Camp,Update,Student,TestResult,TestPaper
 from django.conf import settings
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
@@ -75,6 +75,35 @@ class ApprovalRequestSerializer(serializers.ModelSerializer):
     def get_full_name(self, obj):
         return f"{obj.user.first_name} {obj.user.last_name}".strip()
     
+class UpdateSerializer(serializers.ModelSerializer):
+    author_name = serializers.SerializerMethodField()
+    time_formatted = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Update
+        fields = ['id', 'camp', 'title', 'text', 'author', 'author_name', 
+                  'created_at', 'updated_at', 'time', 'time_formatted', 'venue']
+        read_only_fields = ['author_name', 'created_at', 'updated_at', 'time_formatted']
+
+    def get_author_name(self, obj):
+        return obj.author.get_full_name() or obj.author.username
+        
+    def get_time_formatted(self, obj):
+        if obj.time:
+            return obj.time.strftime('%I:%M %p, %d %b %Y')
+        return obj.updated_at.strftime('%I:%M %p, %d %b %Y')
+
+ 
+class CampSerializer(serializers.ModelSerializer):
+    location = serializers.CharField(read_only=True)
+    updates = UpdateSerializer(many=True, read_only=True)
+    student_count = serializers.IntegerField(source='total_students', read_only=True)
+    
+    class Meta:
+        model = Camp
+        fields = ['id', 'title', 'year', 'city', 'state', 'location', 'image', 
+                 'total_students', 'student_count', 'created_at', 'updated_at', 'updates']
+           
 class AnnouncementSerializer(serializers.ModelSerializer):
     formatted_content = serializers.SerializerMethodField()
     
@@ -132,7 +161,7 @@ class BrochureSerializer(serializers.ModelSerializer):
 
 class ReportSerializer(serializers.ModelSerializer):
     file_url = serializers.SerializerMethodField()
-    
+
     class Meta:
         model = Report
         fields = ('id', 'title', 'file', 'file_url', 'year', 'location', 'description', 'created_at', 'updated_at')
@@ -153,131 +182,103 @@ class ContactSerializer(serializers.ModelSerializer):
         read_only_fields = ('id', 'created_at')
 
 
-class PYPSerializer(serializers.ModelSerializer):
-    file_url = serializers.SerializerMethodField()
+# class PYPSerializer(serializers.ModelSerializer):
+#     file_url = serializers.SerializerMethodField()
     
-    class Meta:
-        model = PYP
-        fields = ('id', 'title', 'file', 'file_url', 'exam_date', 'location', 'created_at', 'updated_at')
-        read_only_fields = ('id', 'created_at', 'updated_at')
+#     class Meta:
+#         model = PYP
+#         fields = ('id', 'title', 'file', 'file_url', 'exam_date', 'camp', 'created_at', 'updated_at')
+#         read_only_fields = ('id', 'created_at', 'updated_at')
     
-    def get_file_url(self, obj):
-        if obj.file:
-            request = self.context.get('request')
-            if request is not None:
-                return request.build_absolute_uri(obj.file.url)
-            return f"{settings.MEDIA_URL}{obj.file}"
-        return None
+#     def get_file_url(self, obj):
+#         if obj.file:
+#             request = self.context.get('request')
+#             if request is not None:
+#                 return request.build_absolute_uri(obj.file.url)
+#             return f"{settings.MEDIA_URL}{obj.file}"
+#         return None
 
-class STPSerializer(serializers.ModelSerializer):
-    file_url = serializers.SerializerMethodField()
+# class STPSerializer(serializers.ModelSerializer):
+#     file_url = serializers.SerializerMethodField()
     
-    class Meta:
-        model = STP
-        fields = ('id', 'title', 'file', 'file_url', 'exam_date', 'location', 'created_at', 'updated_at')
-        read_only_fields = ('id', 'created_at', 'updated_at')
+#     class Meta:
+#         model = STP
+#         fields = ('id', 'title', 'file', 'file_url', 'exam_date', 'camp', 'created_at', 'updated_at')
+#         read_only_fields = ('id', 'created_at', 'updated_at')
     
-    def get_file_url(self, obj):
-        if obj.file:
-            request = self.context.get('request')
-            if request is not None:
-                return request.build_absolute_uri(obj.file.url)
-            return f"{settings.MEDIA_URL}{obj.file}"
-        return None
+#     def get_file_url(self, obj):
+#         if obj.file:
+#             request = self.context.get('request')
+#             if request is not None:
+#                 return request.build_absolute_uri(obj.file.url)
+#             return f"{settings.MEDIA_URL}{obj.file}"
+#         return None
 
-class WTPSerializer(serializers.ModelSerializer):
-    file_url = serializers.SerializerMethodField()
+# class WTPSerializer(serializers.ModelSerializer):
+#     file_url = serializers.SerializerMethodField()
     
-    class Meta:
-        model = WTP
-        fields = ('id', 'title', 'file', 'file_url', 'exam_date', 'location', 'created_at', 'updated_at')
-        read_only_fields = ('id', 'created_at', 'updated_at')
+#     class Meta:
+#         model = WTP
+#         fields = ('id', 'title', 'file', 'file_url', 'exam_date', 'camp', 'created_at', 'updated_at')
+#         read_only_fields = ('id', 'created_at', 'updated_at')
     
-    def get_file_url(self, obj):
-        if obj.file:
-            request = self.context.get('request')
-            if request is not None:
-                return request.build_absolute_uri(obj.file.url)
-            return f"{settings.MEDIA_URL}{obj.file}"
-        return None
+#     def get_file_url(self, obj):
+#         if obj.file:
+#             request = self.context.get('request')
+#             if request is not None:
+#                 return request.build_absolute_uri(obj.file.url)
+#             return f"{settings.MEDIA_URL}{obj.file}"
+#         return None
 
 
 
-class PYRSerializer(serializers.ModelSerializer):
-    file_url = serializers.SerializerMethodField()
+# class PYRSerializer(serializers.ModelSerializer):
+#     file_url = serializers.SerializerMethodField()
     
-    class Meta:
-        model = PYR
-        fields = ('id', 'title', 'file', 'file_url', 'result_date', 'location', 'created_at', 'updated_at')
-        read_only_fields = ('id', 'created_at', 'updated_at')
+#     class Meta:
+#         model = PYR
+#         fields = ('id', 'title', 'file', 'file_url', 'result_date', 'camp', 'created_at', 'updated_at')
+#         read_only_fields = ('id', 'created_at', 'updated_at')
     
-    def get_file_url(self, obj):
-        if obj.file:
-            request = self.context.get('request')
-            if request is not None:
-                return request.build_absolute_uri(obj.file.url)
-            return f"{settings.MEDIA_URL}{obj.file}"
-        return None
+#     def get_file_url(self, obj):
+#         if obj.file:
+#             request = self.context.get('request')
+#             if request is not None:
+#                 return request.build_absolute_uri(obj.file.url)
+#             return f"{settings.MEDIA_URL}{obj.file}"
+#         return None
 
-class STRSerializer(serializers.ModelSerializer):
-    file_url = serializers.SerializerMethodField()
+# class STRSerializer(serializers.ModelSerializer):
+#     file_url = serializers.SerializerMethodField()
     
-    class Meta:
-        model = STR
-        fields = ('id', 'title', 'file', 'file_url', 'result_date', 'location', 'created_at', 'updated_at')
-        read_only_fields = ('id', 'created_at', 'updated_at')
+#     class Meta:
+#         model = STR
+#         fields = ('id', 'title', 'file', 'file_url', 'result_date', 'camp', 'created_at', 'updated_at')
+#         read_only_fields = ('id', 'created_at', 'updated_at')
     
-    def get_file_url(self, obj):
-        if obj.file:
-            request = self.context.get('request')
-            if request is not None:
-                return request.build_absolute_uri(obj.file.url)
-            return f"{settings.MEDIA_URL}{obj.file}"
-        return None
+#     def get_file_url(self, obj):
+#         if obj.file:
+#             request = self.context.get('request')
+#             if request is not None:
+#                 return request.build_absolute_uri(obj.file.url)
+#             return f"{settings.MEDIA_URL}{obj.file}"
+#         return None
 
-class WTRSerializer(serializers.ModelSerializer):
-    file_url = serializers.SerializerMethodField()
+# class WTRSerializer(serializers.ModelSerializer):
+#     file_url = serializers.SerializerMethodField()
     
-    class Meta:
-        model = WTR
-        fields = ('id', 'title', 'file', 'file_url', 'result_date', 'location', 'created_at', 'updated_at')
-        read_only_fields = ('id', 'created_at', 'updated_at')
+#     class Meta:
+#         model = WTR
+#         fields = ('id', 'title', 'file', 'file_url', 'result_date', 'camp', 'created_at', 'updated_at')
+#         read_only_fields = ('id', 'created_at', 'updated_at')
     
-    def get_file_url(self, obj):
-        if obj.file:
-            request = self.context.get('request')
-            if request is not None:
-                return request.build_absolute_uri(obj.file.url)
-            return f"{settings.MEDIA_URL}{obj.file}"
-        return None
-    
-class UpdateSerializer(serializers.ModelSerializer):
-    author_name = serializers.SerializerMethodField()
-    time_formatted = serializers.SerializerMethodField()
-    
-    class Meta:
-        model = Update
-        fields = ['id', 'camp', 'title', 'text', 'author', 'author_name', 
-                  'created_at', 'updated_at', 'time', 'time_formatted', 'venue']
-        read_only_fields = ['author_name', 'created_at', 'updated_at', 'time_formatted']
-
-    def get_author_name(self, obj):
-        return obj.author.get_full_name() or obj.author.username
-        
-    def get_time_formatted(self, obj):
-        if obj.time:
-            return obj.time.strftime('%I:%M %p, %d %b %Y')
-        return obj.updated_at.strftime('%I:%M %p, %d %b %Y')
-
-class CampSerializer(serializers.ModelSerializer):
-    location = serializers.CharField(read_only=True)
-    updates = UpdateSerializer(many=True, read_only=True)
-    student_count = serializers.IntegerField(source='total_students', read_only=True)
-    
-    class Meta:
-        model = Camp
-        fields = ['id', 'title', 'year', 'city', 'state', 'location', 'image', 
-                 'total_students', 'student_count', 'created_at', 'updated_at', 'updates']
+#     def get_file_url(self, obj):
+#         if obj.file:
+#             request = self.context.get('request')
+#             if request is not None:
+#                 return request.build_absolute_uri(obj.file.url)
+#             return f"{settings.MEDIA_URL}{obj.file}"
+#         return None
 
 class GallerySerializer(serializers.ModelSerializer):
     image_url = serializers.SerializerMethodField()
@@ -328,3 +329,51 @@ class StudentSerializer(serializers.ModelSerializer):
 
     def get_registration_date_formatted(self, obj):
         return obj.registration_date.strftime('%d-%m-%Y')
+
+class TestPaperSerializer(serializers.ModelSerializer):
+    file_url = serializers.SerializerMethodField()
+    type_display = serializers.CharField(source='get_type_display', read_only=True)
+    camp_name = serializers.CharField(source='camp.title', read_only=True)
+    exam_date_formatted = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = TestPaper
+        fields = ('id', 'title', 'file', 'file_url', 'exam_date', 'exam_date_formatted', 
+                  'camp', 'camp_name', 'type', 'type_display', 'standard',
+                  'description', 'created_at', 'updated_at')
+        read_only_fields = ('id', 'created_at', 'updated_at')
+    
+    def get_file_url(self, obj):
+        if obj.file:
+            request = self.context.get('request')
+            if request is not None:
+                return request.build_absolute_uri(obj.file.url)
+            return f"{settings.MEDIA_URL}{obj.file}"
+        return None
+    
+    def get_exam_date_formatted(self, obj):
+        return obj.exam_date.strftime('%d-%m-%Y')
+
+class TestResultSerializer(serializers.ModelSerializer):
+    file_url = serializers.SerializerMethodField()
+    type_display = serializers.CharField(source='get_type_display', read_only=True)
+    camp_name = serializers.CharField(source='camp.title', read_only=True)
+    result_date_formatted = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = TestResult
+        fields = ('id', 'title', 'file', 'file_url', 'result_date', 'result_date_formatted',
+                  'camp', 'camp_name', 'type', 'type_display', 'standard',
+                  'description', 'created_at', 'updated_at')
+        read_only_fields = ('id', 'created_at', 'updated_at')
+    
+    def get_file_url(self, obj):
+        if obj.file:
+            request = self.context.get('request')
+            if request is not None:
+                return request.build_absolute_uri(obj.file.url)
+            return f"{settings.MEDIA_URL}{obj.file}"
+        return None
+    
+    def get_result_date_formatted(self, obj):
+        return obj.result_date.strftime('%d-%m-%Y')

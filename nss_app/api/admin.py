@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Profile, Announcement, Download, Gallery, Brochure, Report, Contact,PYP,PYR,STP,STR,WTP,WTR,Camp,Update,Student
+from .models import Profile, Announcement, Download, Gallery, Brochure, Report, Contact,Camp,Update,Student,TestPaper,TestResult
 
 @admin.register(Profile)
 class ProfileAdmin(admin.ModelAdmin):
@@ -37,43 +37,43 @@ class ReportsAdmin(admin.ModelAdmin):
     search_fields = ('title', 'description')
     list_filter = ('year', 'created_at')
 
-@admin.register(PYP)
-class PYPAdmin(admin.ModelAdmin):
-    list_display = ('title', 'location', 'exam_date', 'created_at')
-    search_fields = ('title', 'location', 'description')
-    list_filter = ('exam_date', 'created_at')
+# @admin.register(PYP)
+# class PYPAdmin(admin.ModelAdmin):
+#     list_display = ('title', 'location', 'exam_date', 'created_at')
+#     search_fields = ('title', 'location', 'description')
+#     list_filter = ('exam_date', 'created_at')
 
-@admin.register(STP)
-class STPAdmin(admin.ModelAdmin):
-    list_display = ('title', 'location', 'exam_date', 'created_at')
-    search_fields = ('title', 'location', 'description')
-    list_filter = ('exam_date', 'created_at')
-
-
-@admin.register(WTP)
-class WTPAdmin(admin.ModelAdmin):
-    list_display = ('title', 'location', 'exam_date', 'created_at')
-    search_fields = ('title', 'location', 'description')
-    list_filter = ('exam_date', 'created_at')
+# @admin.register(STP)
+# class STPAdmin(admin.ModelAdmin):
+#     list_display = ('title', 'location', 'exam_date', 'created_at')
+#     search_fields = ('title', 'location', 'description')
+#     list_filter = ('exam_date', 'created_at')
 
 
-@admin.register(PYR)
-class PYRAdmin(admin.ModelAdmin):
-    list_display = ('title', 'location', 'result_date', 'created_at')
-    search_fields = ('title', 'location', 'description')
-    list_filter = ('result_date', 'created_at')
+# @admin.register(WTP)
+# class WTPAdmin(admin.ModelAdmin):
+#     list_display = ('title', 'location', 'exam_date', 'created_at')
+#     search_fields = ('title', 'location', 'description')
+#     list_filter = ('exam_date', 'created_at')
 
-@admin.register(STR)
-class STRAdmin(admin.ModelAdmin):
-    list_display = ('title', 'location', 'result_date', 'created_at')
-    search_fields = ('title', 'location', 'description')
-    list_filter = ('result_date', 'created_at')
 
-@admin.register(WTR)
-class WTRAdmin(admin.ModelAdmin):
-    list_display = ('title', 'location', 'result_date', 'created_at')
-    search_fields = ('title', 'location', 'description')
-    list_filter = ('result_date', 'created_at')
+# @admin.register(PYR)
+# class PYRAdmin(admin.ModelAdmin):
+#     list_display = ('title', 'location', 'result_date', 'created_at')
+#     search_fields = ('title', 'location', 'description')
+#     list_filter = ('result_date', 'created_at')
+
+# @admin.register(STR)
+# class STRAdmin(admin.ModelAdmin):
+#     list_display = ('title', 'location', 'result_date', 'created_at')
+#     search_fields = ('title', 'location', 'description')
+#     list_filter = ('result_date', 'created_at')
+
+# @admin.register(WTR)
+# class WTRAdmin(admin.ModelAdmin):
+#     list_display = ('title', 'location', 'result_date', 'created_at')
+#     search_fields = ('title', 'location', 'description')
+#     list_filter = ('result_date', 'created_at')
 
 
 @admin.register(Contact)
@@ -144,3 +144,19 @@ class StudentAdmin(admin.ModelAdmin):
 class StudentInline(admin.TabularInline):
     model = Student
     extra = 0
+
+
+# admin.py
+@admin.register(TestPaper)
+class TestPaperAdmin(admin.ModelAdmin):
+    list_display = ('title', 'type', 'exam_date', 'camp', 'created_at')
+    search_fields = ('title', 'description')
+    list_filter = ('type', 'exam_date', 'camp', 'created_at')
+    date_hierarchy = 'exam_date'
+
+@admin.register(TestResult)
+class TestResultAdmin(admin.ModelAdmin):
+    list_display = ('title', 'type', 'result_date', 'camp', 'created_at')
+    search_fields = ('title', 'description')
+    list_filter = ('type', 'result_date', 'camp', 'created_at')
+    date_hierarchy = 'result_date'

@@ -39,6 +39,36 @@ class ApprovalRequest(models.Model):
     
     def __str__(self):
         return f"{self.user.username}'s approval request - {self.status}"
+    
+class Camp(models.Model):
+    title = models.CharField(max_length=200)
+    year = models.IntegerField()
+    city = models.CharField(max_length=100)
+    state = models.CharField(max_length=100)
+    location = models.CharField(max_length=200, editable=False)
+    image = models.ImageField(upload_to='camp_images/', blank=True, null=True)
+    # This is the single source of truth for student count
+    total_students = models.IntegerField(default=0,editable=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def save(self, *args, **kwargs):
+        self.city=self.city.title()
+        self.state=self.state.title()
+        self.title=self.title.title()
+        self.location = f"{self.city}, {self.state}"
+        super().save(*args, **kwargs)
+    
+    def __str__(self):
+        return f"{self.title} - {self.location} ({self.year})"
+    
+    class Meta:
+        indexes = [
+            models.Index(fields=['city']),
+            models.Index(fields=['state']),
+            models.Index(fields=['year']),
+        ]
+        ordering = ['-year', 'state', 'city']
 
 class Announcement(models.Model):
     title = models.CharField(max_length=200)
@@ -102,103 +132,104 @@ class Contact(models.Model):
 
     class Meta:
         ordering = ['-created_at']
-
-
-# Screening test paper   
-class PYP(models.Model):
-    title = models.CharField(max_length=200)
-    file = models.FileField(upload_to='pyp/')
-    exam_date = models.DateField()
-    location = models.CharField(max_length=100, null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    def __str__(self):
-        return f"{self.title} - {self.location} ({self.exam_date})"
-
-    class Meta:
-        ordering = ['exam_date', '-created_at']
-        verbose_name = "Screening Test Paper"
         
-# Surprise test paper
-class STP(models.Model):
-    title = models.CharField(max_length=200)
-    file = models.FileField(upload_to='stp/')
-    exam_date = models.DateField()
-    location = models.CharField(max_length=100, null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
-    def __str__(self):
-        return f"{self.title} - {self.location} ({self.exam_date})"
 
-    class Meta:
-        ordering = ['exam_date', '-created_at']
-        verbose_name = "Surprise Test Paper"
+# # Screening test paper   
+# class PYP(models.Model):
+#     title = models.CharField(max_length=200)
+#     file = models.FileField(upload_to='pyp/')
+#     exam_date = models.DateField()
+#     camp = models.ForeignKey(Camp, on_delete=models.CASCADE, related_name='gallery_images')
+#     created_at = models.DateTimeField(auto_now_add=True)
+#     updated_at = models.DateTimeField(auto_now=True)
+
+#     def __str__(self):
+#         return f"{self.title} - {self.location} ({self.exam_date})"
+
+#     class Meta:
+#         ordering = ['exam_date', '-created_at']
+#         verbose_name = "Screening Test Paper"
         
-#weekly test paper
-class WTP(models.Model):
-    title = models.CharField(max_length=200)
-    file = models.FileField(upload_to='wtp/')
-    exam_date = models.DateField()
-    location = models.CharField(max_length=100, null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+# # Surprise test paper
+# class STP(models.Model):
+#     title = models.CharField(max_length=200)
+#     file = models.FileField(upload_to='stp/')
+#     exam_date = models.DateField()
+#     camp = models.ForeignKey(Camp, on_delete=models.CASCADE, related_name='gallery_images')
+#     created_at = models.DateTimeField(auto_now_add=True)
+#     updated_at = models.DateTimeField(auto_now=True)
 
-    def __str__(self):
-        return f"{self.title} - {self.location} ({self.exam_date})"
+#     def __str__(self):
+#         return f"{self.title} - {self.location} ({self.exam_date})"
 
-    class Meta:
-        ordering = ['exam_date', '-created_at']
-        verbose_name = "Weekly Test Paper"
+#     class Meta:
+#         ordering = ['exam_date', '-created_at']
+#         verbose_name = "Surprise Test Paper"
         
-# Screening test result
-class PYR(models.Model):
-    title = models.CharField(max_length=200)
-    file = models.FileField(upload_to='wtp/')
-    result_date = models.DateField()
-    location = models.CharField(max_length=100, null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+# #weekly test paper
+# class WTP(models.Model):
+#     title = models.CharField(max_length=200)
+#     file = models.FileField(upload_to='wtp/')
+#     exam_date = models.DateField()
+#     camp = models.ForeignKey(Camp, on_delete=models.CASCADE, related_name='gallery_images')
+#     created_at = models.DateTimeField(auto_now_add=True)
+#     updated_at = models.DateTimeField(auto_now=True)
 
-    def __str__(self):
-        return f"{self.title} - {self.location} ({self.result_date})"
+#     def __str__(self):
+#         return f"{self.title} - {self.location} ({self.exam_date})"
 
-    class Meta:
-        ordering = ['result_date', '-created_at']
-        verbose_name = "Screening Test Result"
+#     class Meta:
+#         ordering = ['exam_date', '-created_at']
+#         verbose_name = "Weekly Test Paper"
         
-#Surprise test result
-class STR(models.Model):
-    title = models.CharField(max_length=200)
-    file = models.FileField(upload_to='wtp/')
-    result_date = models.DateField()
-    location = models.CharField(max_length=100, null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+# # Screening test result
+# class PYR(models.Model):
+#     title = models.CharField(max_length=200)
+#     file = models.FileField(upload_to='wtp/')
+#     result_date = models.DateField()
+#     camp = models.ForeignKey(Camp, on_delete=models.CASCADE, related_name='gallery_images')
+#     created_at = models.DateTimeField(auto_now_add=True)
+#     updated_at = models.DateTimeField(auto_now=True)
 
-    def __str__(self):
-        return f"{self.title} - {self.location} ({self.result_date})"
+#     def __str__(self):
+#         return f"{self.title} - {self.location} ({self.result_date})"
 
-    class Meta:
-        ordering = ['result_date', '-created_at']
-        verbose_name = "Surprise Test Result"
+#     class Meta:
+#         ordering = ['result_date', '-created_at']
+#         verbose_name = "Screening Test Result"
+        
+# #Surprise test result
+# class STR(models.Model):
+#     title = models.CharField(max_length=200)
+#     file = models.FileField(upload_to='wtp/')
+#     result_date = models.DateField()
+#     camp = models.ForeignKey(Camp, on_delete=models.CASCADE, related_name='gallery_images')
+#     created_at = models.DateTimeField(auto_now_add=True)
+#     updated_at = models.DateTimeField(auto_now=True)
+
+#     def __str__(self):
+#         return f"{self.title} - {self.location} ({self.result_date})"
+
+#     class Meta:
+#         ordering = ['result_date', '-created_at']
+#         verbose_name = "Surprise Test Result"
     
-#Weekly test result
-class WTR(models.Model):
-    title = models.CharField(max_length=200)
-    file = models.FileField(upload_to='wtp/')
-    result_date = models.DateField()
-    location = models.CharField(max_length=100, null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+# #Weekly test result
+# class WTR(models.Model):
+#     title = models.CharField(max_length=200)
+#     file = models.FileField(upload_to='wtp/')
+#     result_date = models.DateField()
+#     camp = models.ForeignKey(Camp, on_delete=models.CASCADE, related_name='gallery_images')
+#     created_at = models.DateTimeField(auto_now_add=True)
+#     updated_at = models.DateTimeField(auto_now=True)
 
-    def __str__(self):
-        return f"{self.title} - {self.location} ({self.result_date})"
+#     def __str__(self):
+#         return f"{self.title} - {self.location} ({self.result_date})"
 
-    class Meta:
-        ordering = ['result_date', '-created_at']
-        verbose_name = "Weekly Test Result"
+#     class Meta:
+#         ordering = ['result_date', '-created_at']
+#         verbose_name = "Weekly Test Result"
         
 #updates for a camp admin frontend        
 class Update(models.Model):
@@ -218,33 +249,6 @@ class Update(models.Model):
     def __str__(self):
         return f"Update by {self.author.username} for {self.camp.title}"
  
-class Camp(models.Model):
-    title = models.CharField(max_length=200)
-    year = models.IntegerField()
-    city = models.CharField(max_length=100)
-    state = models.CharField(max_length=100)
-    location = models.CharField(max_length=200, editable=False)
-    image = models.ImageField(upload_to='camp_images/', blank=True, null=True)
-    # This is the single source of truth for student count
-    total_students = models.IntegerField(default=0,editable=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    
-    def save(self, *args, **kwargs):
-        # Automatically generate the location string from city and state
-        self.location = f"{self.city}, {self.state}"
-        super().save(*args, **kwargs)
-    
-    def __str__(self):
-        return f"{self.title} - {self.location} ({self.year})"
-    
-    class Meta:
-        indexes = [
-            models.Index(fields=['city']),
-            models.Index(fields=['state']),
-            models.Index(fields=['year']),
-        ]
-        ordering = ['-year', 'state', 'city']
 
 class Gallery(models.Model):
     TYPE_CHOICES = [
@@ -294,8 +298,10 @@ class Student(models.Model):
     ] + [(str(i), str(i)) for i in range(1, 11)] + [
         ('11 (M)', '11 (M)'),
         ('11 (B)', '11 (B)'),
+        ('11 (C)', '11 (C)'),
         ('12 (M)', '12 (M)'),
         ('12 (B)', '12 (B)'),
+        ('12 (C)', '12 (C)'),
         ('Dropper', 'Dropper'),
     ]
     
@@ -335,3 +341,94 @@ class Student(models.Model):
     
     def __str__(self):
         return f"{self.name} - {self.standard} ({self.camp.title})"
+    
+
+class TestPaper(models.Model):
+    TEST_TYPES = [
+        ('screening', 'Screening Test Paper'),
+        ('surprise', 'Surprise Test Paper'),
+        ('weekly', 'Weekly Test Paper'),
+    ]
+    STANDARD_CHOICES = [
+        ('Nursery', 'Nursery'),
+        ('LKG', 'LKG'),
+        ('UKG', 'UKG'),
+    ] + [(str(i), str(i)) for i in range(1, 11)] + [
+        ('11 (M)', '11 (M)'),
+        ('11 (B)', '11 (B)'),
+        ('11 (C)', '11 (C)'),
+        ('12 (M)', '12 (M)'),
+        ('12 (B)', '12 (B)'),
+        ('12 (C)', '12 (C)'),
+        ('Dropper', 'Dropper'),
+    ]
+    
+    title = models.CharField(max_length=200)
+    file = models.FileField(upload_to='test_papers/')
+    exam_date = models.DateField()
+    camp = models.ForeignKey(Camp, on_delete=models.CASCADE, related_name='test_papers')
+    type = models.CharField(max_length=20, choices=TEST_TYPES)
+    description = models.TextField(blank=True, null=True)
+    standard = models.CharField(max_length=10,choices=STANDARD_CHOICES, blank=True, null=True)  # Add this field
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-exam_date', '-created_at']
+        verbose_name = "Test Paper"
+        verbose_name_plural = "Test Papers"
+        # Add indexes for fields commonly used in filtering and sorting
+        indexes = [
+            models.Index(fields=['type']),
+            models.Index(fields=['exam_date']),
+            models.Index(fields=['standard']),
+            models.Index(fields=['created_at']),
+        ]
+    
+    def __str__(self):
+        return f"{self.title} - {self.get_type_display()} ({self.exam_date})"
+
+class TestResult(models.Model):
+    TEST_TYPES = [
+        ('screening', 'Screening Test Result'),
+        ('surprise', 'Surprise Test Result'),
+        ('weekly', 'Weekly Test Result'),
+    ]
+    STANDARD_CHOICES = [
+        ('Nursery', 'Nursery'),
+        ('LKG', 'LKG'),
+        ('UKG', 'UKG'),
+    ] + [(str(i), str(i)) for i in range(1, 11)] + [
+        ('11 (M)', '11 (M)'),
+        ('11 (B)', '11 (B)'),
+        ('11 (C)', '11 (C)'),
+        ('12 (M)', '12 (M)'),
+        ('12 (B)', '12 (B)'),
+        ('12 (C)', '12 (C)'),
+        ('Dropper', 'Dropper'),
+    ]
+    
+    title = models.CharField(max_length=200)
+    file = models.FileField(upload_to='test_results/')
+    result_date = models.DateField()
+    camp = models.ForeignKey(Camp, on_delete=models.CASCADE, related_name='test_results')
+    type = models.CharField(max_length=20, choices=TEST_TYPES)
+    description = models.TextField(blank=True, null=True)
+    standard = models.CharField(max_length=10, choices=STANDARD_CHOICES,blank=True, null=True)  # Add this field
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-result_date', '-created_at']
+        verbose_name = "Test Result"
+        verbose_name_plural = "Test Results"
+        # Add indexes for fields commonly used in filtering and sorting
+        indexes = [
+            models.Index(fields=['type']),
+            models.Index(fields=['result_date']),
+            models.Index(fields=['standard']),
+            models.Index(fields=['created_at']),
+        ]
+    
+    def __str__(self):
+        return f"{self.title} - {self.get_type_display()} ({self.result_date})"
