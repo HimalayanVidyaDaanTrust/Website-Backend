@@ -14,7 +14,7 @@ from .views import (
     STRList, STRDetail, STRDownload,
     WTRList, WTRDetail, WTRDownload,
     CampViewSet,UpdateViewSet,StudentViewSet,
-    student_register,
+    student_register, update_register
 )
 
 router = DefaultRouter()
@@ -74,7 +74,9 @@ urlpatterns = [
     path('wtr-download/<int:pk>/', WTRDownload.as_view(), name='wtr-download'),
     path('camps/<int:camp_id>/students/', StudentViewSet.as_view({'get': 'list', 'post': 'create'}), name='camp-students'),
     path('camps/<int:camp_id>/updates/', UpdateViewSet.as_view({'get': 'list'}), name='camp-updates'),
-    path('api/student-register/', student_register, name='student-register'),
+    path('new-student-register/', student_register, name='student-register'),
+    path('add_update/', update_register, name='update-register'),
+    
     
     
     

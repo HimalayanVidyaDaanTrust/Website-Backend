@@ -252,17 +252,22 @@ class WTRSerializer(serializers.ModelSerializer):
         return None
     
 class UpdateSerializer(serializers.ModelSerializer):
-    author_name = serializers.SerializerMethodField()    
+    author_name = serializers.SerializerMethodField()
+    time_formatted = serializers.SerializerMethodField()
+    
     class Meta:
         model = Update
-        fields = ['id', 'camp', 'text', 'author', 'author_name', 'created_at', 'updated_at', 'time','title','venue']
-        read_only_fields = ['author_name', 'created_at','updated_at']
-    
+        fields = ['id', 'camp', 'title', 'text', 'author', 'author_name', 
+                  'created_at', 'updated_at', 'time', 'time_formatted', 'venue']
+        read_only_fields = ['author_name', 'created_at', 'updated_at', 'time_formatted']
+
     def get_author_name(self, obj):
         return obj.author.get_full_name() or obj.author.username
-    
-    def get_time(self, obj):
-        return obj.updated_at.strftime('%I:%M %p')
+        
+    def get_time_formatted(self, obj):
+        if obj.time:
+            return obj.time.strftime('%I:%M %p, %d %b %Y')
+        return obj.updated_at.strftime('%I:%M %p, %d %b %Y')
 
 class CampSerializer(serializers.ModelSerializer):
     location = serializers.CharField(read_only=True)

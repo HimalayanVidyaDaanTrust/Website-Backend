@@ -1164,8 +1164,8 @@ class UpdateViewSet(viewsets.ModelViewSet):
     queryset = Update.objects.all()
     serializer_class = UpdateSerializer
     
-    def perform_create(self, serializer):
-        serializer.save(author=self.request.user)
+    # def perform_create(self, serializer):
+    #     serializer.save(author=self.request.user)
         
 # Add this to views.py
 @method_decorator(csrf_exempt, name='dispatch')
@@ -1229,18 +1229,69 @@ def logout_view(request):
 
 @api_view(['POST'])
 @permission_classes([permissions.AllowAny])
-@method_decorator(csrf_exempt, name='dispatch')
 def student_register(request):
-    """
-    API endpoint for student registration
-    """
-    # Add the registration date if not provided
     if 'registration_date' not in request.data:
         from datetime import date
         request.data['registration_date'] = date.today().isoformat()
-        
     serializer = StudentSerializer(data=request.data)
     if serializer.is_valid():
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+@permission_classes([permissions.AllowAny])
+def update_register(request):
+    try:
+        from django.utils import timezone
+        from datetime import datetime
+        from django.contrib.auth.models import User
+        from .models import Update
+        
+        camp_id = request.data.get('camp')
+        camp = Camp.objects.get(id=camp_id)        
+        # Get the author (using admin as fallback)
+        try:
+            author = User.objects.get(username='admin')
+        except User.DoesNotExist:
+            return Response({'error': 'Admin user not found'}, status=400)
+
+        # Create a new update object
+        update = Update(
+            camp=camp,
+            title=request.data.get('title', ''),
+            text=request.data.get('text', ''),
+            author=author,
+            venue=request.data.get('venue', '')
+        )
+        
+        # Handle date and time if provided
+        if 'examDate' in request.data and 'examTime' in request.data:
+            date_str = request.data.get('examDate')
+            time_str = request.data.get('examTime')
+            
+            if date_str and time_str:
+                try:
+                    # Parse the datetime
+                    naive_datetime = datetime.strptime(f"{date_str} {time_str}", '%Y-%m-%d %H:%M')
+                    
+                    # Make it timezone aware
+                    aware_datetime = timezone.make_aware(naive_datetime)
+                    
+                    # Set the time field
+                    update.time = aware_datetime
+                except ValueError as e:
+                    print(f"Error parsing date/time: {e}")
+        
+        # Save the update
+        update.save()
+        
+        # Serialize and return the created update
+        serializer = UpdateSerializer(update)
+        return Response(serializer.data, status=201)
+        
+    except Exception as e:
+        import traceback
+        print(f"Error in update_register: {str(e)}")
+        print(traceback.format_exc())
+        return Response({'error': str(e)}, status=500)
