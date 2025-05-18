@@ -70,17 +70,6 @@ class Camp(models.Model):
         ]
         ordering = ['-year', 'state', 'city']
 
-class Announcement(models.Model):
-    title = models.CharField(max_length=200)
-    content = models.TextField()
-    date_posted = models.DateTimeField(auto_now_add=True)
-    image = models.ImageField(upload_to='announcement_images', blank=True, null=True)
-    venue = models.CharField(max_length=200, blank=True, null=True)
-    time = models.DateTimeField(blank=True, null=True)
-    
-    def __str__(self):
-        return self.title
-
 class Download(models.Model):
     title = models.CharField(max_length=200)
     file = models.FileField(upload_to='downloads')
@@ -132,106 +121,7 @@ class Contact(models.Model):
 
     class Meta:
         ordering = ['-created_at']
-        
-
-
-# # Screening test paper   
-# class PYP(models.Model):
-#     title = models.CharField(max_length=200)
-#     file = models.FileField(upload_to='pyp/')
-#     exam_date = models.DateField()
-#     camp = models.ForeignKey(Camp, on_delete=models.CASCADE, related_name='gallery_images')
-#     created_at = models.DateTimeField(auto_now_add=True)
-#     updated_at = models.DateTimeField(auto_now=True)
-
-#     def __str__(self):
-#         return f"{self.title} - {self.location} ({self.exam_date})"
-
-#     class Meta:
-#         ordering = ['exam_date', '-created_at']
-#         verbose_name = "Screening Test Paper"
-        
-# # Surprise test paper
-# class STP(models.Model):
-#     title = models.CharField(max_length=200)
-#     file = models.FileField(upload_to='stp/')
-#     exam_date = models.DateField()
-#     camp = models.ForeignKey(Camp, on_delete=models.CASCADE, related_name='gallery_images')
-#     created_at = models.DateTimeField(auto_now_add=True)
-#     updated_at = models.DateTimeField(auto_now=True)
-
-#     def __str__(self):
-#         return f"{self.title} - {self.location} ({self.exam_date})"
-
-#     class Meta:
-#         ordering = ['exam_date', '-created_at']
-#         verbose_name = "Surprise Test Paper"
-        
-# #weekly test paper
-# class WTP(models.Model):
-#     title = models.CharField(max_length=200)
-#     file = models.FileField(upload_to='wtp/')
-#     exam_date = models.DateField()
-#     camp = models.ForeignKey(Camp, on_delete=models.CASCADE, related_name='gallery_images')
-#     created_at = models.DateTimeField(auto_now_add=True)
-#     updated_at = models.DateTimeField(auto_now=True)
-
-#     def __str__(self):
-#         return f"{self.title} - {self.location} ({self.exam_date})"
-
-#     class Meta:
-#         ordering = ['exam_date', '-created_at']
-#         verbose_name = "Weekly Test Paper"
-        
-# # Screening test result
-# class PYR(models.Model):
-#     title = models.CharField(max_length=200)
-#     file = models.FileField(upload_to='wtp/')
-#     result_date = models.DateField()
-#     camp = models.ForeignKey(Camp, on_delete=models.CASCADE, related_name='gallery_images')
-#     created_at = models.DateTimeField(auto_now_add=True)
-#     updated_at = models.DateTimeField(auto_now=True)
-
-#     def __str__(self):
-#         return f"{self.title} - {self.location} ({self.result_date})"
-
-#     class Meta:
-#         ordering = ['result_date', '-created_at']
-#         verbose_name = "Screening Test Result"
-        
-# #Surprise test result
-# class STR(models.Model):
-#     title = models.CharField(max_length=200)
-#     file = models.FileField(upload_to='wtp/')
-#     result_date = models.DateField()
-#     camp = models.ForeignKey(Camp, on_delete=models.CASCADE, related_name='gallery_images')
-#     created_at = models.DateTimeField(auto_now_add=True)
-#     updated_at = models.DateTimeField(auto_now=True)
-
-#     def __str__(self):
-#         return f"{self.title} - {self.location} ({self.result_date})"
-
-#     class Meta:
-#         ordering = ['result_date', '-created_at']
-#         verbose_name = "Surprise Test Result"
-    
-# #Weekly test result
-# class WTR(models.Model):
-#     title = models.CharField(max_length=200)
-#     file = models.FileField(upload_to='wtp/')
-#     result_date = models.DateField()
-#     camp = models.ForeignKey(Camp, on_delete=models.CASCADE, related_name='gallery_images')
-#     created_at = models.DateTimeField(auto_now_add=True)
-#     updated_at = models.DateTimeField(auto_now=True)
-
-#     def __str__(self):
-#         return f"{self.title} - {self.location} ({self.result_date})"
-
-#     class Meta:
-#         ordering = ['result_date', '-created_at']
-#         verbose_name = "Weekly Test Result"
-        
-#updates for a camp admin frontend        
+      
 class Update(models.Model):
     camp = models.ForeignKey('Camp', on_delete=models.CASCADE, related_name='updates')
     title = models.CharField(max_length=200)

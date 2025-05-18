@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import Profile, Announcement, Download, Gallery, Brochure, Report, Contact,ApprovalRequest, Camp,Update,Student,TestResult,TestPaper
+from .models import Profile, Download, Gallery, Brochure, Report, Contact,ApprovalRequest, Camp,Update,Student,TestResult,TestPaper
 from django.conf import settings
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
@@ -103,38 +103,6 @@ class CampSerializer(serializers.ModelSerializer):
         model = Camp
         fields = ['id', 'title', 'year', 'city', 'state', 'location', 'image', 
                  'total_students', 'student_count', 'created_at', 'updated_at', 'updates']
-           
-class AnnouncementSerializer(serializers.ModelSerializer):
-    formatted_content = serializers.SerializerMethodField()
-    
-    class Meta:
-        model = Announcement
-        fields = ('id', 'title', 'content', 'formatted_content', 'date_posted', 'image', 'venue', 'time')
-        read_only_fields = ('id', 'date_posted', 'formatted_content')
-    
-    def get_formatted_content(self, obj):
-        try:
-            if not obj.content:
-                return ""
-            
-            text = obj.content.replace('\n', '<br>')
-            
-            # Pattern to identify URLs
-            url_pattern = re.compile(r'(https?://[^\s<]+|www\.[^\s<]+)')
-            
-            # Replace URLs with HTML links
-            def replace_url(match):
-                url = match.group(0)
-                if url.startswith('www.'):
-                    url = 'http://' + url
-                return f'<a href="{url}" target="_blank">{url}</a>'
-            
-            # Apply the replacement
-            linked_text = url_pattern.sub(replace_url, text)
-            return linked_text
-        except Exception as e:
-            # Fallback in case of any error
-            return obj.content or ""
 
 class DownloadSerializer(serializers.ModelSerializer):
     class Meta:
@@ -181,104 +149,6 @@ class ContactSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'email', 'subject', 'message', 'created_at')
         read_only_fields = ('id', 'created_at')
 
-
-# class PYPSerializer(serializers.ModelSerializer):
-#     file_url = serializers.SerializerMethodField()
-    
-#     class Meta:
-#         model = PYP
-#         fields = ('id', 'title', 'file', 'file_url', 'exam_date', 'camp', 'created_at', 'updated_at')
-#         read_only_fields = ('id', 'created_at', 'updated_at')
-    
-#     def get_file_url(self, obj):
-#         if obj.file:
-#             request = self.context.get('request')
-#             if request is not None:
-#                 return request.build_absolute_uri(obj.file.url)
-#             return f"{settings.MEDIA_URL}{obj.file}"
-#         return None
-
-# class STPSerializer(serializers.ModelSerializer):
-#     file_url = serializers.SerializerMethodField()
-    
-#     class Meta:
-#         model = STP
-#         fields = ('id', 'title', 'file', 'file_url', 'exam_date', 'camp', 'created_at', 'updated_at')
-#         read_only_fields = ('id', 'created_at', 'updated_at')
-    
-#     def get_file_url(self, obj):
-#         if obj.file:
-#             request = self.context.get('request')
-#             if request is not None:
-#                 return request.build_absolute_uri(obj.file.url)
-#             return f"{settings.MEDIA_URL}{obj.file}"
-#         return None
-
-# class WTPSerializer(serializers.ModelSerializer):
-#     file_url = serializers.SerializerMethodField()
-    
-#     class Meta:
-#         model = WTP
-#         fields = ('id', 'title', 'file', 'file_url', 'exam_date', 'camp', 'created_at', 'updated_at')
-#         read_only_fields = ('id', 'created_at', 'updated_at')
-    
-#     def get_file_url(self, obj):
-#         if obj.file:
-#             request = self.context.get('request')
-#             if request is not None:
-#                 return request.build_absolute_uri(obj.file.url)
-#             return f"{settings.MEDIA_URL}{obj.file}"
-#         return None
-
-
-
-# class PYRSerializer(serializers.ModelSerializer):
-#     file_url = serializers.SerializerMethodField()
-    
-#     class Meta:
-#         model = PYR
-#         fields = ('id', 'title', 'file', 'file_url', 'result_date', 'camp', 'created_at', 'updated_at')
-#         read_only_fields = ('id', 'created_at', 'updated_at')
-    
-#     def get_file_url(self, obj):
-#         if obj.file:
-#             request = self.context.get('request')
-#             if request is not None:
-#                 return request.build_absolute_uri(obj.file.url)
-#             return f"{settings.MEDIA_URL}{obj.file}"
-#         return None
-
-# class STRSerializer(serializers.ModelSerializer):
-#     file_url = serializers.SerializerMethodField()
-    
-#     class Meta:
-#         model = STR
-#         fields = ('id', 'title', 'file', 'file_url', 'result_date', 'camp', 'created_at', 'updated_at')
-#         read_only_fields = ('id', 'created_at', 'updated_at')
-    
-#     def get_file_url(self, obj):
-#         if obj.file:
-#             request = self.context.get('request')
-#             if request is not None:
-#                 return request.build_absolute_uri(obj.file.url)
-#             return f"{settings.MEDIA_URL}{obj.file}"
-#         return None
-
-# class WTRSerializer(serializers.ModelSerializer):
-#     file_url = serializers.SerializerMethodField()
-    
-#     class Meta:
-#         model = WTR
-#         fields = ('id', 'title', 'file', 'file_url', 'result_date', 'camp', 'created_at', 'updated_at')
-#         read_only_fields = ('id', 'created_at', 'updated_at')
-    
-#     def get_file_url(self, obj):
-#         if obj.file:
-#             request = self.context.get('request')
-#             if request is not None:
-#                 return request.build_absolute_uri(obj.file.url)
-#             return f"{settings.MEDIA_URL}{obj.file}"
-#         return None
 
 class GallerySerializer(serializers.ModelSerializer):
     image_url = serializers.SerializerMethodField()

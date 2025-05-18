@@ -1,17 +1,11 @@
 from django.contrib import admin
-from .models import Profile, Announcement, Download, Gallery, Brochure, Report, Contact,Camp,Update,Student,TestPaper,TestResult
+from .models import Profile, Download, Gallery, Brochure, Report, Contact,Camp,Update,Student,TestPaper,TestResult
 
 @admin.register(Profile)
 class ProfileAdmin(admin.ModelAdmin):
     list_display = ('user', 'entry_number', 'mobile_number', 'role', 'created_at')
     search_fields = ('user__username', 'entry_number', 'mobile_number')
     list_filter = ('role', 'created_at')
-
-@admin.register(Announcement)
-class AnnouncementAdmin(admin.ModelAdmin):
-    list_display = ('title', 'date_posted')
-    search_fields = ('title', 'content')
-    list_filter = ('date_posted',)
 
 @admin.register(Download)
 class DownloadAdmin(admin.ModelAdmin):
