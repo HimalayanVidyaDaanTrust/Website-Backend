@@ -34,6 +34,8 @@ from django.contrib.auth import authenticate, login, logout
 from rest_framework.authtoken.models import Token
 from django.middleware.csrf import get_token
 import mimetypes
+from rest_framework.decorators import api_view, permission_classes
+
 
 logger = logging.getLogger(__name__)
 class CsrfExemptSessionAuthentication(SessionAuthentication):
@@ -813,6 +815,13 @@ class UpdateViewSet(viewsets.ModelViewSet):
     queryset = Update.objects.all()
     serializer_class = UpdateSerializer
     
+    def get_queryset(self):
+        queryset=Update.objects.all()
+        camp_id = self.request.query_params.get('camp_id')
+        if camp_id:
+            queryset = queryset.filter(camp_id=camp_id)
+        return queryset
+    
     # def perform_create(self, serializer):
     #     serializer.save(author=self.request.user)
         
@@ -859,6 +868,7 @@ class TestPaperViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         queryset = TestPaper.objects.all().order_by('-exam_date')  # Default sort by latest first
+        
         
         # Apply filters
         # Filter by type
@@ -1130,5 +1140,25 @@ def create_camp(request):
     except Exception as e:
         import traceback
         print(f"Error in create_camp: {str(e)}")
+        print(traceback.format_exc())
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+@api_view(['POST'])
+@permission_classes([permissions.AllowAny])
+def add_gallery(request):
+    """
+    Add image(s) to gallery
+    """
+    try:
+        serializer = GallerySerializer(data=request.data)
+        
+        if serializer.is_valid():
+            gallery = serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            print('Serializer errors:', serializer.errors)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        import traceback
+        print(f"Error in add_gallery: {str(e)}")
         print(traceback.format_exc())
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
