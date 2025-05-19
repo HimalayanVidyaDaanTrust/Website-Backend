@@ -1107,3 +1107,28 @@ def upload_test_result(request):
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+@permission_classes([permissions.AllowAny])
+def create_camp(request):
+    """
+    Create a new camp
+    """
+    try:
+        # Create a new camp object from the request data
+        serializer = CampSerializer(data=request.data)
+        
+        if serializer.is_valid():
+            # Save the camp
+            camp = serializer.save()
+            
+            # Return the created camp data
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            # Return validation errors
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        import traceback
+        print(f"Error in create_camp: {str(e)}")
+        print(traceback.format_exc())
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

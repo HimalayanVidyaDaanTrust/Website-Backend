@@ -8,7 +8,7 @@ from .views import (
     GalleryList, GalleryDetail, GalleryDownload,
     CampViewSet,UpdateViewSet,StudentViewSet,
     student_register, update_register,
-    TestPaperViewSet,TestResultViewSet,upload_test_paper,upload_test_result
+    TestPaperViewSet,TestResultViewSet,upload_test_paper,upload_test_result,create_camp
 )
 
 router = DefaultRouter()
@@ -67,6 +67,7 @@ urlpatterns = [
     path('camps/<int:camp_id>/test-papers/', TestPaperViewSet.as_view({'get': 'list', 'post': 'create'}), name='camp-test-papers'),
     path('camps/<int:camp_id>/test-results/', TestResultViewSet.as_view({'get': 'list', 'post': 'create'}), name='camp-test-results'),
     
+    path('create-camp/', create_camp, name='create-camp'),
     path('new-student-register/', student_register, name='student-register'),
     path('add_update/', update_register, name='update-register'),
     path('upload-test-paper/', upload_test_paper, name='upload-test-paper'),
