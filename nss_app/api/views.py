@@ -283,7 +283,7 @@ class DownloadViewSet(viewsets.ModelViewSet):
 class GalleryViewSet(viewsets.ModelViewSet):
     queryset = Gallery.objects.all().order_by('-date')
     serializer_class = GallerySerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
         queryset = Gallery.objects.all().order_by('-date')
@@ -321,7 +321,7 @@ class GalleryViewSet(viewsets.ModelViewSet):
     
     def get_permissions(self):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
-            return [permissions.IsAuthenticated()]
+            return [permissions.AllowAny()]
         return [permissions.AllowAny()]
     
     def get_serializer_context(self):
@@ -687,7 +687,7 @@ def login_view(request):
 class GalleryList(generics.ListCreateAPIView):
     queryset = Gallery.objects.all().order_by('-date')
     serializer_class = GallerySerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
         queryset = Gallery.objects.all().order_by('-date')
@@ -699,7 +699,7 @@ class GalleryList(generics.ListCreateAPIView):
 class GalleryDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = Gallery.objects.all()
     serializer_class = GallerySerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [permissions.AllowAny]
 
 class GalleryDownload(generics.RetrieveAPIView):
     queryset = Gallery.objects.all()
@@ -862,8 +862,16 @@ class StudentViewSet(viewsets.ModelViewSet):
 class TestPaperViewSet(viewsets.ModelViewSet):
     queryset = TestPaper.objects.all()
     serializer_class = TestPaperSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [permissions.AllowAny]
     pagination_class = StandardResultsSetPagination
+    
+    def update(self, request, *args, **kwargs):
+        partial = True  # Allow partial updates
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return Response(serializer.data)
     
     def get_queryset(self):
         queryset = TestPaper.objects.all().order_by('-exam_date')  # Default sort by latest first
@@ -932,8 +940,16 @@ class TestPaperViewSet(viewsets.ModelViewSet):
 class TestResultViewSet(viewsets.ModelViewSet):
     queryset = TestResult.objects.all()
     serializer_class = TestResultSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [permissions.AllowAny]
     pagination_class = StandardResultsSetPagination
+    
+    def update(self, request, *args, **kwargs):
+        partial = True  # Allow partial updates
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return Response(serializer.data)
     
     def get_queryset(self):
         queryset = TestResult.objects.all().order_by('-result_date')  # Default sort by latest first
@@ -974,14 +990,6 @@ class TestResultViewSet(viewsets.ModelViewSet):
             
         return queryset
     
-    def create(self, request, *args, **kwargs):
-        # Handle file upload and other data
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-    
     @action(detail=True, methods=['get'])
     def download(self, request, pk=None):
         test_result = self.get_object()
@@ -997,6 +1005,7 @@ class TestResultViewSet(viewsets.ModelViewSet):
             response['Content-Disposition'] = f'attachment; filename="{os.path.basename(file_path)}"'
             return response
         return Response({"error": "File not found"}, status=status.HTTP_404_NOT_FOUND)
+    
 
 
 
