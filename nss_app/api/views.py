@@ -1019,57 +1019,59 @@ def logout_view(request):
         return Response({'message': 'Logout successful'})
     return Response({'error': 'Method not allowed'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
-@api_view(['POST'])
+@api_view(['POST', 'PUT'])
 @permission_classes([permissions.AllowAny])
 def update_register(request):
     try:
         from django.utils import timezone
         from datetime import datetime
         from django.contrib.auth.models import User
-        from .models import Update
-        
+        from .models import Update, Camp
+        from .serializers import UpdateSerializer
+
         camp_id = request.data.get('camp')
-        camp = Camp.objects.get(id=camp_id)        
+        camp = Camp.objects.get(id=camp_id)
+
         # Get the author (using admin as fallback)
         try:
             author = User.objects.get(username='admin')
         except User.DoesNotExist:
             return Response({'error': 'Admin user not found'}, status=400)
 
-        # Create a new update object
-        update = Update(
-            camp=camp,
-            title=request.data.get('title', ''),
-            text=request.data.get('text', ''),
-            author=author,
-            venue=request.data.get('venue', '')
-        )
-        
+        # Create or update the Update object
+        if request.method == 'PUT':
+            update_id = request.GET.get('id')
+            try:
+                update = Update.objects.get(id=update_id)
+            except Update.DoesNotExist:
+                return Response({'error': 'Update not found'}, status=404)
+        else:  # POST
+            update = Update()
+            update.author = author
+
+        # Set common fields
+        update.camp = camp
+        update.title = request.data.get('title', '')
+        update.text = request.data.get('text', '')
+        update.venue = request.data.get('venue', '')
+
         # Handle date and time if provided
         if 'examDate' in request.data and 'examTime' in request.data:
             date_str = request.data.get('examDate')
             time_str = request.data.get('examTime')
-            
             if date_str and time_str:
                 try:
-                    # Parse the datetime
                     naive_datetime = datetime.strptime(f"{date_str} {time_str}", '%Y-%m-%d %H:%M')
-                    
-                    # Make it timezone aware
                     aware_datetime = timezone.make_aware(naive_datetime)
-                    
-                    # Set the time field
                     update.time = aware_datetime
                 except ValueError as e:
                     print(f"Error parsing date/time: {e}")
-        
-        # Save the update
+
+        # Save and serialize
         update.save()
-        
-        # Serialize and return the created update
         serializer = UpdateSerializer(update)
-        return Response(serializer.data, status=201)
-        
+        return Response(serializer.data, status=200 if request.method == 'PUT' else 201)
+
     except Exception as e:
         import traceback
         print(f"Error in update_register: {str(e)}")
