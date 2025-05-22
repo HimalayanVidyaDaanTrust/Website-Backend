@@ -843,10 +843,9 @@ class StudentViewSet(viewsets.ModelViewSet):
         queryset = Student.objects.all()
         
         # Filter by camp if provided
-        camp_id = self.request.query_params.get('camp_id')
+        camp_id = self.kwargs.get('camp_id')
         if camp_id:
-            queryset = queryset.filter(camp_id=camp_id)
-        
+            queryset = queryset.filter(camp=camp_id)
         # Filter by standard if provided
         standard = self.request.query_params.get('standard')
         if standard:
@@ -1022,18 +1021,6 @@ def logout_view(request):
 
 @api_view(['POST'])
 @permission_classes([permissions.AllowAny])
-def student_register(request):
-    if 'registration_date' not in request.data:
-        from datetime import date
-        request.data['registration_date'] = date.today().isoformat()
-    serializer = StudentSerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-@api_view(['POST'])
-@permission_classes([permissions.AllowAny])
 def update_register(request):
     try:
         from django.utils import timezone
@@ -1088,77 +1075,3 @@ def update_register(request):
         print(f"Error in update_register: {str(e)}")
         print(traceback.format_exc())
         return Response({'error': str(e)}, status=500)
-
-
-@api_view(['POST'])
-@permission_classes([permissions.AllowAny])
-def upload_test_paper(request):
-    """
-    Upload a new test paper
-    """
-    print("Received data:", request.data)
-
-    serializer = TestPaperSerializer(data=request.data,context={'request': request})
-    if serializer.is_valid():
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-@api_view(['POST'])
-@permission_classes([permissions.AllowAny])
-def upload_test_result(request):
-    """
-    Upload a new test result
-    """
-    print("Received data:", request.data)
-    
-    serializer = TestResultSerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-@api_view(['POST'])
-@permission_classes([permissions.AllowAny])
-def create_camp(request):
-    """
-    Create a new camp
-    """
-    try:
-        # Create a new camp object from the request data
-        serializer = CampSerializer(data=request.data)
-        
-        if serializer.is_valid():
-            # Save the camp
-            camp = serializer.save()
-            
-            # Return the created camp data
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        else:
-            # Return validation errors
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    except Exception as e:
-        import traceback
-        print(f"Error in create_camp: {str(e)}")
-        print(traceback.format_exc())
-        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-@api_view(['POST'])
-@permission_classes([permissions.AllowAny])
-def add_gallery(request):
-    """
-    Add image(s) to gallery
-    """
-    try:
-        serializer = GallerySerializer(data=request.data)
-        
-        if serializer.is_valid():
-            gallery = serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        else:
-            print('Serializer errors:', serializer.errors)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    except Exception as e:
-        import traceback
-        print(f"Error in add_gallery: {str(e)}")
-        print(traceback.format_exc())
-        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

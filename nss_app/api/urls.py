@@ -6,9 +6,8 @@ from .views import (
     user_info, ContactViewSet, DownloadViewSet, GalleryViewSet, 
     BrochureViewSet, ReportViewSet, get_csrf_token,
     GalleryList, GalleryDetail, GalleryDownload,
-    CampViewSet,UpdateViewSet,StudentViewSet,
-    student_register, update_register,
-    TestPaperViewSet,TestResultViewSet,upload_test_paper,upload_test_result,create_camp,add_gallery
+    CampViewSet,UpdateViewSet,StudentViewSet, update_register,
+    TestPaperViewSet,TestResultViewSet
 )
 
 router = DefaultRouter()
@@ -17,7 +16,7 @@ router.register(r'downloads', DownloadViewSet)
 router.register(r'gallery', GalleryViewSet)
 router.register(r'brochures', BrochureViewSet)
 router.register(r'reports', ReportViewSet)
-router.register(r'camps', CampViewSet)
+router.register(r'camp', CampViewSet)
 router.register(r'updates', UpdateViewSet)
 router.register(r'students', StudentViewSet)
 router.register(r'test-papers', TestPaperViewSet)
@@ -38,42 +37,13 @@ urlpatterns = [
     path('gallery-detail/<int:pk>/', GalleryDetail.as_view(), name='gallery-detail'),
     path('gallery-download/<int:pk>/', GalleryDownload.as_view(), name='gallery-download'),
     
-    # path('pyp-list/', PYPList.as_view(), name='pyp-list'),
-    # path('pyp-detail/<int:pk>/', PYPDetail.as_view(), name='pyp-detail'),
-    # path('pyp-download/<int:pk>/', PYPDownload.as_view(), name='pyp-download'),
-    
-    # path('stp-list/', STPList.as_view(), name='stp-list'),
-    # path('stp-detail/<int:pk>/', STPDetail.as_view(), name='stp-detail'),
-    # path('stp-download/<int:pk>/', STPDownload.as_view(), name='stp-download'),
-    
-    # path('wtp-list/', WTPList.as_view(), name='wtp-list'),
-    # path('wtp-detail/<int:pk>/', WTPDetail.as_view(), name='wtp-detail'),
-    # path('wtp-download/<int:pk>/', WTPDownload.as_view(), name='wtp-download'),
-    
-    # path('pyr-list/', PYRList.as_view(), name='pyr-list'),
-    # path('pyr-detail/<int:pk>/', PYRDetail.as_view(), name='pyr-detail'),
-    # path('pyr-download/<int:pk>/', PYRDownload.as_view(), name='pyr-download'),
-
-    # path('str-list/', STRList.as_view(), name='str-list'),
-    # path('str-detail/<int:pk>/', STRDetail.as_view(), name='str-detail'),
-    # path('str-download/<int:pk>/', STRDownload.as_view(), name='str-download'),
-
-    # path('wtr-list/', WTRList.as_view(), name='wtr-list'),
-    # path('wtr-detail/<int:pk>/', WTRDetail.as_view(), name='wtr-detail'),
-    # path('wtr-download/<int:pk>/', WTRDownload.as_view(), name='wtr-download'),
-    
     path('camps/<int:camp_id>/students/', StudentViewSet.as_view({'get': 'list', 'post': 'create'}), name='camp-students'),
     path('camps/<int:camp_id>/updates/', UpdateViewSet.as_view({'get': 'list'}), name='camp-updates'),
     path('camps/<int:camp_id>/test-papers/', TestPaperViewSet.as_view({'get': 'list', 'post': 'create'}), name='camp-test-papers'),
     path('camps/<int:camp_id>/test-results/', TestResultViewSet.as_view({'get': 'list', 'post': 'create'}), name='camp-test-results'),
     
-    path('create-camp/', create_camp, name='create-camp'),
-    path('new-student-register/', student_register, name='student-register'),
-    path('add_update/', update_register, name='update-register'),
-    path('add_image/', add_gallery, name='add-gallery'),
-    path('upload-test-paper/', upload_test_paper, name='upload-test-paper'),
-    path('upload-test-result/', upload_test_result, name='upload-test-result'),
     
+    path('add_update/', update_register, name='update-register'),
     
     path('test-papers/type/<str:type>/', TestPaperViewSet.as_view({'get': 'list'}), name='test-papers-by-type'),
     path('test-results/type/<str:type>/', TestResultViewSet.as_view({'get': 'list'}), name='test-results-by-type'), 
