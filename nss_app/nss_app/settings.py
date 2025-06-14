@@ -141,9 +141,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # REST Framework settings
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        # 'rest_framework.authentication.SessionAuthentication',
-        # 'rest_framework.authentication.TokenAuthentication',
-        'rest_framework.authentication.BasicAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.TokenAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.AllowAny',
@@ -192,9 +191,11 @@ EMAIL_HOST_PASSWORD = 'bihz dezh izlc nlwj'
 ADMIN_EMAIL = 'tejashvikumawat@gmail.com'  # Updated to the requested email
 
 # CSRF settings
-CSRF_COOKIE_SAMESITE = None  # Changed from 'Lax' to None for development
-CSRF_COOKIE_HTTPONLY = True
-CSRF_COOKIE_SECURE = False  # Changed from True to False for development
+CSRF_COOKIE_NAME = 'csrftoken'  #
+CSRF_HEADER_NAME = 'HTTP_X_CSRFTOKEN'   #
+CSRF_COOKIE_SAMESITE = 'Lax'  # Changed from 'Lax' to None for development
+CSRF_COOKIE_HTTPONLY = False
+CSRF_COOKIE_SECURE = True  # Changed from True to False for development
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5173",
     "https://api.himalayanvidyadaan.org",

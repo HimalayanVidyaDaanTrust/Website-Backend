@@ -2,12 +2,12 @@ from django.urls import path
 from rest_framework.routers import DefaultRouter
 
 from .views import (
-    UserRegisterView, UserProfileView, api_index, login_view, logout_view,
+    UserRegisterView, UserProfileView, api_index, logout_view,
     user_info, ContactViewSet, DownloadViewSet, GalleryViewSet, 
     BrochureViewSet, ReportViewSet, get_csrf_token,
     GalleryList, GalleryDetail, GalleryDownload,
     CampViewSet,UpdateViewSet,StudentViewSet, update_register,
-    TestPaperViewSet,TestResultViewSet
+    TestPaperViewSet,TestResultViewSet,LoginView
 )
 
 router = DefaultRouter()
@@ -27,7 +27,8 @@ urlpatterns = [
     path('', api_index, name='api-index'),
     path('register/', UserRegisterView.as_view(), name='user-register'),
     path('profile/', UserProfileView.as_view(), name='user-profile'),
-    path('login/', login_view, name='login'),
+    # path('login/', login_view, name='login'),
+    path('login/', LoginView.as_view(), name='login'),
     path('logout/', logout_view, name='logout'),
     path('user-info/', user_info, name='user-info'),
     path('csrf/', get_csrf_token, name='csrf'),
