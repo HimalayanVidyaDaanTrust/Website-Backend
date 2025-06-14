@@ -575,7 +575,7 @@ def get_csrf_token(request):
     return response
 
 @method_decorator(csrf_exempt, name='dispatch')
-class LoginView(generics.GenericAPIView):
+class LoginView(APIView):
     permission_classes = [AllowAny]
     authentication_classes = []
 
