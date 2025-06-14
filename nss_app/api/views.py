@@ -51,14 +51,167 @@ class IgnoreClientContentNegotiation(BaseContentNegotiation):
 
 
 class IsCoordinator(permissions.BasePermission):
-    """
-    Custom permission to only allow coordinators to access the view.
-    """
     def has_permission(self, request, view):
         try:
-            return request.user.is_authenticated and request.user.profile.role == 'Coordinator'
-        except:
+            if not request.user.is_authenticated:
+                return False
+                
+            if not hasattr(request.user, 'profile'):
+                return False
+                
+            return request.user.profile.role == 'Coordinator'
+        except Exception as e:
             return False
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def user_info(request):
+    user = request.user
+    data = {
+        'id': user.id,
+        'username': user.username,
+        'email': user.email,
+        'first_name': user.first_name,
+        'last_name': user.last_name,
+    }
+    return Response(data)
+
+@ensure_csrf_cookie
+def get_csrf_token(request):
+    """
+    Endpoint to ensure a CSRF cookie is set and return the token
+    """
+    token = get_token(request)  # Add this line to get the actual token
+    
+    response = JsonResponse({
+        "success": "CSRF cookie set",
+        "csrfToken": token  # Add this line to return the token
+    })
+    
+    # Get the origin from the request
+    origin = request.headers.get('Origin', '')
+    allowed_origins = [
+        'http://localhost:5174',
+        'http://localhost:5173',
+        'http://127.0.0.1:5173',
+        'http://127.0.0.1:5174',
+        'https://himalayanvidyadaan.org',
+        'https://www.himalayanvidyadaan.org',
+        'https://api.himalayanvidyadaan.org',
+        'https://admin.himalayanvidyadaan.org'
+    ]
+
+    if origin in allowed_origins:
+        response["Access-Control-Allow-Origin"] = origin
+        response["Access-Control-Allow-Credentials"] = "true"
+        response["Access-Control-Allow-Headers"] = "Origin, X-Requested-With, Content-Type, Accept, Authorization, X-CSRFToken"
+        response["Access-Control-Allow-Methods"] = "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+
+    return response
+
+@method_decorator(csrf_exempt, name='dispatch')
+class LoginView(APIView):
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    def post(self, request):
+        username = request.data.get('username')
+        password = request.data.get('password')
+
+        if not username or not password:
+            return Response({'error': 'Username and password required'}, status=400)
+
+        try:
+            user_obj = User.objects.get(username=username)
+        except User.DoesNotExist:
+            return Response({'error': 'Invalid credentials'}, status=401)
+
+        # Check if user was rejected
+        try:
+            approval_request = ApprovalRequest.objects.get(user=user_obj)
+            if approval_request.status == 'rejected':
+                return Response({
+                    'error': 'Your previous registration request was rejected. Please register again with a new account.',
+                    'rejection_reason': approval_request.review_comments or 'No specific reason provided.',
+                    'should_register_again': True
+                }, status=401)
+        except ApprovalRequest.DoesNotExist:
+            pass
+
+        # Check password manually
+        if not user_obj.check_password(password):
+            return Response({'error': 'Invalid credentials'}, status=401)
+        
+        # Check if user is inactive
+        if not user_obj.is_active:
+            return Response({'error': 'Your account is pending approval. Please wait for administrator approval.'}, status=401)
+
+        # Check if account is approved
+        try:
+            approval_request = ApprovalRequest.objects.get(user=user_obj)
+            if approval_request.status != 'approved':
+                return Response({'error': 'Your account is pending approval. Please wait for administrator approval.'}, status=401)
+        except ApprovalRequest.DoesNotExist:
+            return Response({'error': 'No approval request found. Please contact administrator.'}, status=401)
+
+        # Login success - create token
+        token, _ = Token.objects.get_or_create(user=user_obj)
+
+        # Get profile data
+        try:
+            profile = Profile.objects.get(user=user_obj)
+            profile_data = {
+                'role': profile.role,
+                'entry_number': profile.entry_number,
+                'mobile_number': profile.mobile_number,
+                'email': profile.email
+            }
+        except Profile.DoesNotExist:
+            profile_data = {}
+
+        # Approval info
+        approval_status = approval_request.status
+        can_access_admin = approval_status == 'approved'
+        review_comments = approval_request.review_comments
+
+        # Superuser or coordinator can access admin
+        if user_obj.is_superuser or (hasattr(user_obj, 'profile') and user_obj.profile.role == 'Coordinator'):
+            can_access_admin = True
+
+        # Prepare response
+        response = Response({
+            'token': token.key,
+            'user_id': user_obj.pk,
+            'username': user_obj.username,
+            'first_name': user_obj.first_name,
+            'last_name': user_obj.last_name,
+            'email': user_obj.email,
+            'profile': profile_data,
+            'approval_status': approval_status,
+            'can_access_admin': can_access_admin,
+            'review_comments': review_comments
+        })
+
+        # Add CORS headers
+        origin = request.headers.get('Origin', '')
+        allowed_origins = [
+            'http://localhost:5174',
+            'http://localhost:5173',
+            'http://127.0.0.1:5173',
+            'http://127.0.0.1:5174',
+            'https://himalayanvidyadaan.org',
+            'https://www.himalayanvidyadaan.org',
+            'https://api.himalayanvidyadaan.org',
+            'https://admin.himalayanvidyadaan.org'
+        ]
+
+        if origin in allowed_origins:
+            response["Access-Control-Allow-Origin"] = origin
+            response["Access-Control-Allow-Credentials"] = "true"
+            response["Access-Control-Allow-Headers"] = "Origin, X-Requested-With, Content-Type, Accept, Authorization, X-CSRFToken"
+            response["Access-Control-Allow-Methods"] = "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+
+        return response
 
 class ApprovalRequestViewSet(viewsets.ModelViewSet):
     """
@@ -68,13 +221,10 @@ class ApprovalRequestViewSet(viewsets.ModelViewSet):
     """
     queryset = ApprovalRequest.objects.all().order_by('-created_at')
     serializer_class = ApprovalRequestSerializer
+    authentication_classes = [TokenAuthentication]
     
     def get_permissions(self):
-        """
-        - List/retrieve/update/approve/reject: Coordinator only
-        - Others: Authenticated users
-        """
-        if self.action in ['list', 'retrieve', 'update', 'partial_update', 'approve', 'reject']:
+        if self.action in ['list', 'retrieve', 'approve', 'reject']:
             permission_classes = [IsCoordinator]
         else:
             permission_classes = [permissions.IsAuthenticated]
@@ -92,49 +242,49 @@ class ApprovalRequestViewSet(viewsets.ModelViewSet):
     
     @action(detail=True, methods=['post'])
     def approve(self, request, pk=None):
-        """
-        Approve a request and update user's profile role
-        """
         approval_request = self.get_object()
         if approval_request.status != 'pending':
             return Response({"error": "This request has already been processed"}, 
-                            status=status.HTTP_400_BAD_REQUEST)
-            
+                        status=status.HTTP_400_BAD_REQUEST)
+        
+        # Approve the request
         approval_request.status = 'approved'
         approval_request.reviewed_by = request.user
         approval_request.review_comments = request.data.get('comments', '')
         approval_request.save()
         
+        # Activate the user and update profile
+        user = approval_request.user
+        user.is_active = True  # Activate user account
+        user.save()
+        
         # Update user's profile role
-        profile = Profile.objects.get(user=approval_request.user)
+        profile = Profile.objects.get(user=user)
         profile.role = approval_request.requested_role
         profile.save()
         
         return Response({
-            "message": f"User {approval_request.user.username} has been approved as {approval_request.requested_role}",
+            "message": f"User {user.username} has been approved as {approval_request.requested_role}",
             "approval_request": ApprovalRequestSerializer(approval_request).data
         })
-    
+
     @action(detail=True, methods=['post'])
     def reject(self, request, pk=None):
-        """
-        Reject a request
-        """
         approval_request = self.get_object()
         if approval_request.status != 'pending':
             return Response({"error": "This request has already been processed"}, 
-                            status=status.HTTP_400_BAD_REQUEST)
-            
+                        status=status.HTTP_400_BAD_REQUEST)
+        
         approval_request.status = 'rejected'
         approval_request.reviewed_by = request.user
         approval_request.review_comments = request.data.get('comments', '')
         approval_request.save()
         
+        
         return Response({
             "message": f"Request from {approval_request.user.username} has been rejected",
             "approval_request": ApprovalRequestSerializer(approval_request).data
         })
-        
         
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
@@ -527,254 +677,6 @@ class ContactViewSet(viewsets.ModelViewSet):
                 logger.error(traceback.format_exc())
                 return False
 
-
-@api_view(['GET'])
-@permission_classes([permissions.IsAuthenticated])
-def user_info(request):
-    user = request.user
-    data = {
-        'id': user.id,
-        'username': user.username,
-        'email': user.email,
-        'first_name': user.first_name,
-        'last_name': user.last_name,
-    }
-    return Response(data)
-
-@ensure_csrf_cookie
-def get_csrf_token(request):
-    """
-    Endpoint to ensure a CSRF cookie is set and return the token
-    """
-    token = get_token(request)  # Add this line to get the actual token
-    
-    response = JsonResponse({
-        "success": "CSRF cookie set",
-        "csrfToken": token  # Add this line to return the token
-    })
-    
-    # Get the origin from the request
-    origin = request.headers.get('Origin', '')
-    allowed_origins = [
-        'http://localhost:5174',
-        'http://localhost:5173',
-        'http://127.0.0.1:5173',
-        'http://127.0.0.1:5174',
-        'https://himalayanvidyadaan.org',
-        'https://www.himalayanvidyadaan.org',
-        'https://api.himalayanvidyadaan.org',
-        'https://admin.himalayanvidyadaan.org'
-    ]
-
-    if origin in allowed_origins:
-        response["Access-Control-Allow-Origin"] = origin
-        response["Access-Control-Allow-Credentials"] = "true"
-        response["Access-Control-Allow-Headers"] = "Origin, X-Requested-With, Content-Type, Accept, Authorization, X-CSRFToken"
-        response["Access-Control-Allow-Methods"] = "GET, POST, PUT, PATCH, DELETE, OPTIONS"
-
-    return response
-
-@method_decorator(csrf_exempt, name='dispatch')
-class LoginView(APIView):
-    permission_classes = [AllowAny]
-    authentication_classes = []
-
-    def post(self, request):
-        username = request.data.get('username')
-        password = request.data.get('password')
-        print(f"Login attempt for username: {username}")
-
-        if username and password:
-            user = authenticate(username=username, password=password)
-            if user:
-                if user.is_active:
-                    token, created = Token.objects.get_or_create(user=user)
-                    try:
-                        profile = Profile.objects.get(user=user)
-                        profile_data = {
-                            'role': profile.role,
-                            'entry_number': profile.entry_number,
-                            'mobile_number': profile.mobile_number,
-                            'webmail': profile.webmail
-                        }
-                    except Profile.DoesNotExist:
-                        profile_data = {}
-
-                    # Check approval status
-                    approval_status = "not_requested"
-                    can_access_admin = False
-                    review_comments = None
-                    try:
-                        approval_request = ApprovalRequest.objects.get(user=user)
-                        approval_status = approval_request.status
-                        can_access_admin = approval_status == 'approved'
-                        review_comments = approval_request.review_comments
-                    except ApprovalRequest.DoesNotExist:
-                        pass
-
-                    # Special case: If user is superuser or has role 'Coordinator'
-                    if user.is_superuser or (hasattr(user, 'profile') and user.profile.role == 'Coordinator'):
-                        can_access_admin = True
-
-                    response = Response({
-                        'token': token.key,
-                        'user_id': user.pk,
-                        'username': user.username,
-                        'first_name': user.first_name,
-                        'last_name': user.last_name,
-                        'email': user.email,
-                        'profile': profile_data,
-                        'approval_status': approval_status,
-                        'can_access_admin': can_access_admin,
-                        'review_comments': review_comments
-                    })
-
-                    # Add CORS headers
-                    origin = request.headers.get('Origin', '')
-                    allowed_origins = [
-                        'http://localhost:5174',
-                        'http://localhost:5173',
-                        'http://127.0.0.1:5173',
-                        'http://127.0.0.1:5174',
-                        'https://himalayanvidyadaan.org',
-                        'https://www.himalayanvidyadaan.org',
-                        'https://api.himalayanvidyadaan.org',
-                        'https://admin.himalayanvidyadaan.org'
-                    ]
-
-                    if origin in allowed_origins:
-                        response["Access-Control-Allow-Origin"] = origin
-                        response["Access-Control-Allow-Credentials"] = "true"
-                        response["Access-Control-Allow-Headers"] = "Origin, X-Requested-With, Content-Type, Accept, Authorization, X-CSRFToken"
-                        response["Access-Control-Allow-Methods"] = "GET, POST, PUT, PATCH, DELETE, OPTIONS"
-
-                    return response
-                else:
-                    return Response({
-                        'error': 'Account is disabled'
-                    }, status=status.HTTP_401_UNAUTHORIZED)
-            else:
-                return Response({
-                    'error': 'Invalid credentials'
-                }, status=status.HTTP_401_UNAUTHORIZED)
-        else:
-            return Response({
-                'error': 'Username and password required'
-            }, status=status.HTTP_400_BAD_REQUEST)
-
-
-# @api_view(['POST'])
-# @permission_classes([permissions.AllowAny])
-# @method_decorator(csrf_exempt, name='dispatch')
-# def login_view(request):
-#     """
-#     Login view that accepts username/email and password,
-#     authenticates the user, and returns a token.
-#     """
-#     username = request.data.get('username')
-#     password = request.data.get('password')
-    
-#     if not username or not password:
-#         return Response({'error': 'Please provide both username and password'}, status=status.HTTP_400_BAD_REQUEST)
-    
-#     # Try to authenticate using username
-#     user = authenticate(username=username, password=password)
-    
-#     # If authentication failed, check if username is actually an email
-#     if user is None:
-#         # Try to find a user with the given email
-#         try:
-#             user_with_email = User.objects.get(email=username)
-#             # If found, try to authenticate with their username
-#             user = authenticate(username=user_with_email.username, password=password)
-#         except User.DoesNotExist:
-#             # No user found with that email
-#             pass
-    
-#     if user is not None:
-#         login(request, user)
-#         token, created = Token.objects.get_or_create(user=user)
-#         try:
-#             profile = Profile.objects.get(user=user)
-#             profile_data = {
-#                 'role': profile.role,
-#                 'entry_number': profile.entry_number,
-#                 'mobile_number': profile.mobile_number,
-#                 'webmail': profile.webmail
-#             }
-#         except Profile.DoesNotExist:
-#             profile_data = {}
-        
-#         # Check approval status
-#         approval_status = "not_requested"
-#         can_access_admin = False
-#         review_comments = None
-        
-#         try:
-#             approval_request = ApprovalRequest.objects.get(user=user)
-#             approval_status = approval_request.status
-#             can_access_admin = approval_status == 'approved'
-#             review_comments = approval_request.review_comments
-#         except ApprovalRequest.DoesNotExist:
-#             pass
-        
-#         # Special case: If user is superuser or has role 'Coordinator', they can always access admin
-#         if user.is_superuser or (hasattr(user, 'profile') and user.profile.role == 'Coordinator'):
-#             can_access_admin = True
-        
-#         response = Response({
-#             'token': token.key,
-#             'user_id': user.pk,
-#             'username': user.username,
-#             'email': user.email,
-#             'first_name': user.first_name,
-#             'last_name': user.last_name,
-#             'profile': profile_data,
-#             'approval_status': approval_status,
-#             'can_access_admin': can_access_admin,
-#             'review_comments': review_comments
-#         })
-        
-#         # Add CORS headers
-#         origin = request.headers.get('Origin', '')
-#         allowed_origins = [
-#             'http://localhost:5174',
-#             'http://localhost:5173',
-#             'https://himalayanvidyadaan.org',
-#             'https://www.himalayanvidyadaan.org',
-#             'https://api.himalayanvidyadaan.org',
-#             'https://admin.himalayanvidyadaan.org'
-#         ]
-        
-#         if origin in allowed_origins:
-#             response["Access-Control-Allow-Origin"] = origin
-#             response["Access-Control-Allow-Credentials"] = "true"
-#             response["Access-Control-Allow-Headers"] = "Origin, X-Requested-With, Content-Type, Accept, Authorization, X-CSRFToken"
-#             response["Access-Control-Allow-Methods"] = "GET, POST, PUT, PATCH, DELETE, OPTIONS"
-            
-#         return response
-#     else:
-#         response = Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
-#         # Add CORS headers to error response too
-#         origin = request.headers.get('Origin', '')
-#         allowed_origins = [
-#             'http://localhost:5174',
-#             'http://localhost:5173',
-#             'https://himalayanvidyadaan.org',
-#             'https://www.himalayanvidyadaan.org',
-#             'https://api.himalayanvidyadaan.org',
-#             'https://admin.himalayanvidyadaan.org'
-#         ]
-        
-#         if origin in allowed_origins:
-#             response["Access-Control-Allow-Origin"] = origin
-#             response["Access-Control-Allow-Credentials"] = "true"
-#             response["Access-Control-Allow-Headers"] = "Origin, X-Requested-With, Content-Type, Accept, Authorization, X-CSRFToken"
-#             response["Access-Control-Allow-Methods"] = "GET, POST, PUT, PATCH, DELETE, OPTIONS"
-            
-#         return response
-
-# Class-based views for direct API access
 class GalleryList(generics.ListCreateAPIView):
     queryset = Gallery.objects.all().order_by('-date')
     serializer_class = GallerySerializer

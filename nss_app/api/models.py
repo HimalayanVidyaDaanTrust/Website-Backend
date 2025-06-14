@@ -12,7 +12,7 @@ class Profile(models.Model):
     bio = models.TextField(blank=True, null=True)
     entry_number = models.CharField(max_length=20, unique=True, blank=True, null=True)
     mobile_number = models.CharField(max_length=15, blank=True, null=True)
-    webmail = models.EmailField(blank=True, null=True)
+    email = models.EmailField(blank=True, null=True)
     profile_pic = models.ImageField(upload_to='profile_pics', blank=True, null=True)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='Slot Coordinator')
     created_at = models.DateTimeField(auto_now_add=True)
@@ -20,6 +20,11 @@ class Profile(models.Model):
     
     def __str__(self):
         return f"{self.user.username}'s profile"
+    
+    def save(self, *args, **kwargs):
+        if self.entry_number:
+            self.entry_number = self.entry_number.upper()
+        super().save(*args, **kwargs)
 
 class ApprovalRequest(models.Model):
     STATUS_CHOICES = [
@@ -27,7 +32,7 @@ class ApprovalRequest(models.Model):
         ('approved', 'Approved'),
         ('rejected', 'Rejected'),
     ]
-    
+
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='approval_request')
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
     requested_role = models.CharField(max_length=20, default='Slot Coordinator')
@@ -36,9 +41,11 @@ class ApprovalRequest(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     reviewed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='reviewed_requests')
     review_comments = models.TextField(blank=True, null=True)
-    
+    attempt_count = models.PositiveIntegerField(default=1)
+    previous_rejection_reason = models.TextField(blank=True, null=True)
+
     def __str__(self):
-        return f"{self.user.username}'s approval request - {self.status}"
+        return f"{self.user.username}'s approval request - {self.status} (Attempt {self.attempt_count})"
     
 class Camp(models.Model):
     title = models.CharField(max_length=200)

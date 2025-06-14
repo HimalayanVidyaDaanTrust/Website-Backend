@@ -2,9 +2,6 @@ from rest_framework import serializers
 from django.contrib.auth.models import User
 from .models import Profile, Download, Gallery, Brochure, Report, Contact,ApprovalRequest, Camp,Update,Student,TestResult,TestPaper
 from django.conf import settings
-from django.utils.html import format_html
-from django.utils.safestring import mark_safe
-import re
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -17,25 +14,26 @@ class UserRegisterSerializer(serializers.ModelSerializer):
     role = serializers.CharField(write_only=True)
     entry_number = serializers.CharField(write_only=True, required=False, allow_blank=True)
     mobile_number = serializers.CharField(write_only=True, required=False, allow_blank=True)
-    webmail = serializers.EmailField(write_only=True, required=False, allow_blank=True)
+    email = serializers.EmailField(write_only=True, required=False, allow_blank=True)
     
     class Meta:
         model = User
         fields = ('username', 'email', 'password', 'first_name', 'last_name', 
-                 'role', 'entry_number', 'mobile_number', 'webmail')
+                 'role', 'entry_number', 'mobile_number', 'email')
     
     def create(self, validated_data):
         role = validated_data.pop('role', 'Slot Coordinator')
         entry_number = validated_data.pop('entry_number', None)
         mobile_number = validated_data.pop('mobile_number', None)
-        webmail = validated_data.pop('webmail', None)
+        email = validated_data.pop('email', None)
         
         user = User.objects.create_user(
             username=validated_data['username'],
             email=validated_data.get('email', ''),
             password=validated_data['password'],
             first_name=validated_data.get('first_name', ''),
-            last_name=validated_data.get('last_name', '')
+            last_name=validated_data.get('last_name', ''),
+            is_active=False,
         )
         
         # Update profile
@@ -43,7 +41,7 @@ class UserRegisterSerializer(serializers.ModelSerializer):
         profile.role = role
         profile.entry_number = entry_number
         profile.mobile_number = mobile_number
-        profile.webmail = webmail
+        profile.email = email
         profile.save()
         
         # Create approval request
@@ -56,7 +54,7 @@ class ProfileSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Profile
-        fields = ('id', 'user', 'bio', 'entry_number', 'mobile_number', 'webmail', 
+        fields = ('id', 'user', 'bio', 'entry_number', 'mobile_number', 'email', 
                  'profile_pic', 'role', 'created_at', 'updated_at')
         read_only_fields = ('id', 'created_at', 'updated_at')
 

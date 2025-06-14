@@ -1,11 +1,48 @@
 from django.contrib import admin
-from .models import Profile, Download, Gallery, Brochure, Report, Contact,Camp,Update,Student,TestPaper,TestResult
+from .models import Profile, Download, Gallery, Brochure, Report, Contact,Camp,Update,Student,TestPaper,TestResult,ApprovalRequest
 
 @admin.register(Profile)
 class ProfileAdmin(admin.ModelAdmin):
     list_display = ('user', 'entry_number', 'mobile_number', 'role', 'created_at')
     search_fields = ('user__username', 'entry_number', 'mobile_number')
     list_filter = ('role', 'created_at')
+
+@admin.register(ApprovalRequest)
+class ApprovalRequestAdmin(admin.ModelAdmin):
+    list_display = ('user', 'status', 'requested_role', 'created_at', 'reviewed_by')
+    list_filter = ('status', 'requested_role', 'created_at')
+    search_fields = ('user__username', 'user__email')
+    readonly_fields = ('created_at', 'updated_at')
+    
+    # Add custom actions for bulk approval/rejection
+    actions = ['approve_requests', 'reject_requests']
+    
+    def approve_requests(self, request, queryset):
+        for approval_request in queryset.filter(status='pending'):
+            # Activate user and update profile
+            user = approval_request.user
+            user.is_active = True
+            user.save()
+            
+            # Update approval request
+            approval_request.status = 'approved'
+            approval_request.reviewed_by = request.user
+            approval_request.save()
+            
+            # Update user profile role
+            profile = user.profile
+            profile.role = approval_request.requested_role
+            profile.save()
+    
+    approve_requests.short_description = "Approve selected requests"
+    
+    def reject_requests(self, request, queryset):
+        queryset.filter(status='pending').update(
+            status='rejected',
+            reviewed_by=request.user
+        )
+    
+    reject_requests.short_description = "Reject selected requests"
 
 @admin.register(Download)
 class DownloadAdmin(admin.ModelAdmin):
