@@ -1,6 +1,36 @@
 from django.db import models
 from django.contrib.auth.models import User
 
+class Camp(models.Model):
+    title = models.CharField(max_length=200)
+    year = models.IntegerField()
+    city = models.CharField(max_length=100)
+    state = models.CharField(max_length=100)
+    location = models.CharField(max_length=200, editable=False)
+    image = models.ImageField(upload_to='camp_images/', blank=True, null=True)
+    # This is the single source of truth for student count
+    total_students = models.IntegerField(default=0,editable=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def save(self, *args, **kwargs):
+        self.city=self.city.title()
+        self.state=self.state.title()
+        self.title=self.title.title()
+        self.location = f"{self.city}, {self.state}"
+        super().save(*args, **kwargs)
+    
+    def __str__(self):
+        return f"{self.title} - {self.location} ({self.year})"
+    
+    class Meta:
+        indexes = [
+            models.Index(fields=['city']),
+            models.Index(fields=['state']),
+            models.Index(fields=['year']),
+        ]
+        ordering = ['-year', 'state', 'city']
+        
 class Profile(models.Model):
     ROLE_CHOICES = [
         ('Coordinator', 'Coordinator'),
@@ -8,6 +38,7 @@ class Profile(models.Model):
         ('Admin', 'Admin'),
     ]
     
+    allocated_camps = models.ManyToManyField(Camp, blank=True, related_name='allocated_coordinators')
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     bio = models.TextField(blank=True, null=True)
     entry_number = models.CharField(max_length=20, unique=True, blank=True, null=True)
@@ -47,35 +78,7 @@ class ApprovalRequest(models.Model):
     def __str__(self):
         return f"{self.user.username}'s approval request - {self.status} (Attempt {self.attempt_count})"
     
-class Camp(models.Model):
-    title = models.CharField(max_length=200)
-    year = models.IntegerField()
-    city = models.CharField(max_length=100)
-    state = models.CharField(max_length=100)
-    location = models.CharField(max_length=200, editable=False)
-    image = models.ImageField(upload_to='camp_images/', blank=True, null=True)
-    # This is the single source of truth for student count
-    total_students = models.IntegerField(default=0,editable=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    
-    def save(self, *args, **kwargs):
-        self.city=self.city.title()
-        self.state=self.state.title()
-        self.title=self.title.title()
-        self.location = f"{self.city}, {self.state}"
-        super().save(*args, **kwargs)
-    
-    def __str__(self):
-        return f"{self.title} - {self.location} ({self.year})"
-    
-    class Meta:
-        indexes = [
-            models.Index(fields=['city']),
-            models.Index(fields=['state']),
-            models.Index(fields=['year']),
-        ]
-        ordering = ['-year', 'state', 'city']
+
 
 class Download(models.Model):
     title = models.CharField(max_length=200)

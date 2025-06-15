@@ -2,7 +2,7 @@ from rest_framework import viewsets, permissions, status, generics, renderers
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.views import APIView
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny,BasePermission, SAFE_METHODS
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication,TokenAuthentication
 from django.contrib.auth.models import User
 from django.db import IntegrityError
@@ -62,6 +62,18 @@ class IsCoordinator(permissions.BasePermission):
             return request.user.profile.role == 'Coordinator'
         except Exception as e:
             return False
+class IsCoordinatorOrReadOnly(BasePermission):
+    def has_permission(self, request, view):
+        # Allow safe methods (GET, HEAD, OPTIONS)
+        if request.method in SAFE_METHODS:
+            return True
+        
+        # Only allow write if user is authenticated and a Coordinator
+        return (
+            request.user.is_authenticated and
+            hasattr(request.user, 'profile') and
+            request.user.profile.role == 'Coordinator'
+        )
 
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
@@ -434,7 +446,7 @@ class DownloadViewSet(viewsets.ModelViewSet):
 class GalleryViewSet(viewsets.ModelViewSet):
     queryset = Gallery.objects.all().order_by('-date')
     serializer_class = GallerySerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
     def get_queryset(self):
         queryset = Gallery.objects.all().order_by('-date')
@@ -469,11 +481,6 @@ class GalleryViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(year=year)
             
         return queryset
-    
-    def get_permissions(self):
-        if self.action in ['create', 'update', 'partial_update', 'destroy']:
-            return [permissions.AllowAny()]
-        return [permissions.AllowAny()]
     
     def get_serializer_context(self):
         context = super().get_serializer_context()
@@ -534,11 +541,6 @@ class BrochureViewSet(viewsets.ModelViewSet):
     serializer_class = BrochureSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     content_negotiation_class = IgnoreClientContentNegotiation
-
-    def get_permissions(self):
-        if self.action in ['create', 'update', 'partial_update', 'destroy']:
-            return [permissions.IsAuthenticated()]
-        return [permissions.AllowAny()]
     
     def get_serializer_context(self):
         context = super().get_serializer_context()
@@ -564,11 +566,6 @@ class ReportViewSet(viewsets.ModelViewSet):
     serializer_class = ReportSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     content_negotiation_class = IgnoreClientContentNegotiation
-
-    def get_permissions(self):
-        if self.action in ['create', 'update', 'partial_update', 'destroy']:
-            return [permissions.IsAuthenticated()]
-        return [permissions.AllowAny()]
     
     def get_serializer_context(self):
         context = super().get_serializer_context()
@@ -680,7 +677,7 @@ class ContactViewSet(viewsets.ModelViewSet):
 class GalleryList(generics.ListCreateAPIView):
     queryset = Gallery.objects.all().order_by('-date')
     serializer_class = GallerySerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
     def get_queryset(self):
         queryset = Gallery.objects.all().order_by('-date')
@@ -692,12 +689,12 @@ class GalleryList(generics.ListCreateAPIView):
 class GalleryDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = Gallery.objects.all()
     serializer_class = GallerySerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
 class GalleryDownload(generics.RetrieveAPIView):
     queryset = Gallery.objects.all()
     serializer_class = GallerySerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     
     def retrieve(self, request, *args, **kwargs):
         gallery = self.get_object()
@@ -769,7 +766,7 @@ class ReportDownload(generics.RetrieveAPIView):
 class CampViewSet(viewsets.ModelViewSet):
     queryset = Camp.objects.all().order_by('-year', 'state', 'city')
     serializer_class = CampSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [IsCoordinatorOrReadOnly]
     
     def get_queryset(self):
         queryset = Camp.objects.all()
@@ -823,7 +820,7 @@ class UpdateViewSet(viewsets.ModelViewSet):
 class StudentViewSet(viewsets.ModelViewSet):
     queryset = Student.objects.all()
     serializer_class = StudentSerializer
-    permission_classes = [AllowAny] 
+    permission_classes = [permissions.IsAuthenticated] 
     def create(self, request, *args, **kwargs):
     # Get the camp_id from the URL
         camp_id = self.kwargs.get('camp_id')
@@ -855,7 +852,7 @@ class StudentViewSet(viewsets.ModelViewSet):
 class TestPaperViewSet(viewsets.ModelViewSet):
     queryset = TestPaper.objects.all()
     serializer_class = TestPaperSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     pagination_class = StandardResultsSetPagination
     
     def update(self, request, *args, **kwargs):
@@ -933,7 +930,7 @@ class TestPaperViewSet(viewsets.ModelViewSet):
 class TestResultViewSet(viewsets.ModelViewSet):
     queryset = TestResult.objects.all()
     serializer_class = TestResultSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     pagination_class = StandardResultsSetPagination
     
     def update(self, request, *args, **kwargs):
@@ -998,23 +995,9 @@ class TestResultViewSet(viewsets.ModelViewSet):
             response['Content-Disposition'] = f'attachment; filename="{os.path.basename(file_path)}"'
             return response
         return Response({"error": "File not found"}, status=status.HTTP_404_NOT_FOUND)
-    
 
 
-
-# Simple view for API index
-@api_view(['GET'])
-@permission_classes([permissions.AllowAny])
-def api_index(request):
-    return Response({
-        "endpoints": {
-            "gallery": "/gallery/",
-            "brochures": "/brochures/",
-            "reports": "/reports/",
-            "admin": "/admin/",
-        }
-    })
-
+@permission_classes([permissions.IsAuthenticated])
 def logout_view(request):
     if request.method == 'POST':
         logout(request)
@@ -1022,7 +1005,7 @@ def logout_view(request):
     return Response({'error': 'Method not allowed'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 @api_view(['POST', 'PUT'])
-@permission_classes([permissions.AllowAny])
+@permission_classes([permissions.IsAuthenticatedOrReadOnly])
 def update_register(request):
     try:
         from django.utils import timezone

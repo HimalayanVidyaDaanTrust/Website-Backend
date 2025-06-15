@@ -27,12 +27,14 @@ class UserRegisterSerializer(serializers.ModelSerializer):
         mobile_number = validated_data.pop('mobile_number', None)
         email = validated_data.pop('email', None)
         
+
+        
         user = User.objects.create_user(
             username=validated_data['username'],
             email=validated_data.get('email', ''),
             password=validated_data['password'],
-            first_name=validated_data.get('first_name', ''),
-            last_name=validated_data.get('last_name', ''),
+            first_name=validated_data.get('first_name', '').strip().capitalize(),
+            last_name=validated_data.get('last_name', '').strip().capitalize(),
             is_active=False,
         )
         
