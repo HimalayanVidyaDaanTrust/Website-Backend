@@ -95,7 +95,7 @@ def user_has_camp_access(user, camp_id):
 def get_user_accessible_camps(user):
     """Get camps that user has access to"""
     if not user.is_authenticated or not hasattr(user, 'profile'):
-        return Camp.objects.none()
+        return Camp.objects.all()
     
     profile = user.profile
     
@@ -822,7 +822,7 @@ class ReportDownload(generics.RetrieveAPIView):
 class CampViewSet(viewsets.ModelViewSet):
     queryset = Camp.objects.all().order_by('-year', 'state', 'city')
     serializer_class = CampSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     authentication_classes = [TokenAuthentication]
 
     def get_queryset(self):
@@ -831,8 +831,6 @@ class CampViewSet(viewsets.ModelViewSet):
         - Coordinators: access all camps
         - Slot Coordinators: access only allocated camps
         """
-        if not hasattr(self.request.user, 'profile'):
-            return Camp.objects.none()
         queryset = get_user_accessible_camps(self.request.user)
         state = self.request.query_params.get('state')
         if state:
