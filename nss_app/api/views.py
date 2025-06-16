@@ -74,6 +74,40 @@ class IsCoordinatorOrReadOnly(BasePermission):
             hasattr(request.user, 'profile') and
             request.user.profile.role == 'Coordinator'
         )
+        
+def user_has_camp_access(user, camp_id):
+    """Check if user has access to specific camp"""
+    if not user.is_authenticated or not hasattr(user, 'profile'):
+        return False
+    
+    profile = user.profile
+    
+    # Coordinators have access to all camps
+    if profile.role == 'Coordinator':
+        return True
+    
+    # Slot coordinators only have access to allocated camps
+    if profile.role == 'Slot Coordinator':
+        return profile.allocated_camps.filter(id=camp_id).exists()
+    
+    return False
+
+def get_user_accessible_camps(user):
+    """Get camps that user has access to"""
+    if not user.is_authenticated or not hasattr(user, 'profile'):
+        return Camp.objects.none()
+    
+    profile = user.profile
+    
+    # Coordinators have access to all camps
+    if profile.role == 'Coordinator':
+        return Camp.objects.all()
+    
+    # Slot coordinators only have access to allocated camps
+    if profile.role == 'Slot Coordinator':
+        return profile.allocated_camps.all()
+    
+    return Camp.objects.none()
 
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
@@ -256,28 +290,46 @@ class ApprovalRequestViewSet(viewsets.ModelViewSet):
     def approve(self, request, pk=None):
         approval_request = self.get_object()
         if approval_request.status != 'pending':
-            return Response({"error": "This request has already been processed"}, 
-                        status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "This request has already been processed"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Get the camp allocation data from request
+        allocated_camp_ids = request.data.get('allocated_camps', [])
         
         # Approve the request
         approval_request.status = 'approved'
         approval_request.reviewed_by = request.user
         approval_request.review_comments = request.data.get('comments', '')
         approval_request.save()
-        
+
         # Activate the user and update profile
         user = approval_request.user
-        user.is_active = True  # Activate user account
+        user.is_active = True
         user.save()
-        
-        # Update user's profile role
+
+        # Update user's profile role and allocate camps
         profile = Profile.objects.get(user=user)
         profile.role = approval_request.requested_role
-        profile.save()
         
+        # If user is slot coordinator, allocate specific camps
+        if approval_request.requested_role == 'Slot Coordinator' and allocated_camp_ids:
+            # Clear existing allocations and add new ones
+            profile.allocated_camps.clear()
+            for camp_id in allocated_camp_ids:
+                try:
+                    camp = Camp.objects.get(id=camp_id)
+                    profile.allocated_camps.add(camp)
+                except Camp.DoesNotExist:
+                    continue
+        elif approval_request.requested_role == 'Coordinator':
+            # Coordinators have access to all camps, so no specific allocation needed
+            profile.allocated_camps.clear()
+        
+        profile.save()
+
         return Response({
             "message": f"User {user.username} has been approved as {approval_request.requested_role}",
-            "approval_request": ApprovalRequestSerializer(approval_request).data
+            "approval_request": ApprovalRequestSerializer(approval_request).data,
+            "allocated_camps": [camp.id for camp in profile.allocated_camps.all()]
         })
 
     @action(detail=True, methods=['post'])
@@ -411,6 +463,7 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
     def get_object(self):
         # Create profile if it doesn't exist
         profile, created = Profile.objects.get_or_create(user=self.request.user)
+        print(profile)
         return profile
 
 class StandardResultsSetPagination(PageNumberPagination):
@@ -540,6 +593,7 @@ class BrochureViewSet(viewsets.ModelViewSet):
     queryset = Brochure.objects.all().order_by('-year', '-created_at')
     serializer_class = BrochureSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    authentication_classes=[TokenAuthentication]
     content_negotiation_class = IgnoreClientContentNegotiation
     
     def get_serializer_context(self):
@@ -565,6 +619,7 @@ class ReportViewSet(viewsets.ModelViewSet):
     queryset = Report.objects.all().order_by('-year', '-created_at')
     serializer_class = ReportSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    authentication_classes=[TokenAuthentication]
     content_negotiation_class = IgnoreClientContentNegotiation
     
     def get_serializer_context(self):
@@ -766,30 +821,51 @@ class ReportDownload(generics.RetrieveAPIView):
 class CampViewSet(viewsets.ModelViewSet):
     queryset = Camp.objects.all().order_by('-year', 'state', 'city')
     serializer_class = CampSerializer
-    permission_classes = [IsCoordinatorOrReadOnly]
-    
+    permission_classes = [permissions.IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
+
     def get_queryset(self):
-        queryset = Camp.objects.all()
-        
-        # Filter by state
+        """
+        Apply role-based filtering for camps
+        - Coordinators: access all camps
+        - Slot Coordinators: access only allocated camps
+        """
+        if not hasattr(self.request.user, 'profile'):
+            return Camp.objects.none()
+        queryset = get_user_accessible_camps(self.request.user)
         state = self.request.query_params.get('state')
         if state:
             queryset = queryset.filter(state__iexact=state)
-            
-        # Filter by city
         city = self.request.query_params.get('city')
         if city:
             queryset = queryset.filter(city__iexact=city)
-            
-        # Filter by year
         year = self.request.query_params.get('year')
         if year:
             queryset = queryset.filter(year=year)
-            
         return queryset
-    
+
+    def retrieve(self, request, *args, **kwargs):
+        """Check if user has access to specific camp"""
+        camp_id = kwargs.get('pk')
+        
+        if not user_has_camp_access(request.user, camp_id):
+            return Response(
+                {"error": "You don't have access to this camp"}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        return super().retrieve(request, *args, **kwargs)
+
     @action(detail=True, methods=['get'])
     def gallery(self, request, pk=None):
+        """Get gallery for specific camp with permission check"""
+        # Check camp access first (user is already authenticated)
+        if not user_has_camp_access(request.user, pk):
+            return Response(
+                {"error": "You don't have access to this camp"}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
         camp = self.get_object()
         galleries = Gallery.objects.filter(camp=camp)
         
@@ -797,9 +873,10 @@ class CampViewSet(viewsets.ModelViewSet):
         type_param = request.query_params.get('type')
         if type_param:
             galleries = galleries.filter(type=type_param)
-            
+        
         serializer = GallerySerializer(galleries, many=True, context={'request': request})
         return Response(serializer.data)
+
 
 class UpdateViewSet(viewsets.ModelViewSet):
     queryset = Update.objects.all()
@@ -821,6 +898,8 @@ class StudentViewSet(viewsets.ModelViewSet):
     queryset = Student.objects.all()
     serializer_class = StudentSerializer
     permission_classes = [permissions.IsAuthenticated] 
+    authentication_classes=[TokenAuthentication]
+    
     def create(self, request, *args, **kwargs):
     # Get the camp_id from the URL
         camp_id = self.kwargs.get('camp_id')
@@ -831,17 +910,27 @@ class StudentViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = Student.objects.all()
-        
+        print(queryset)
         # Filter by camp if provided
-        camp_id = self.kwargs.get('camp_id')
+        camp_id = self.kwargs.get('camp_id') or self.request.query_params.get('camp_id')
+        print(camp_id)
         if camp_id:
+            # Check if user has access to this camp
+            if not user_has_camp_access(self.request.user, camp_id):
+                return Student.objects.none()
             queryset = queryset.filter(camp=camp_id)
-        # Filter by standard if provided
+        else:
+            # Filter by user's accessible camps
+            accessible_camps = get_user_accessible_camps(self.request.user)
+            queryset = queryset.filter(camp__in=accessible_camps)
+        
+        # Apply other filters
         standard = self.request.query_params.get('standard')
         if standard:
             queryset = queryset.filter(standard=standard)
-            
+        
         return queryset
+
     
     def get_serializer_context(self):
         context = super().get_serializer_context()
@@ -853,6 +942,7 @@ class TestPaperViewSet(viewsets.ModelViewSet):
     queryset = TestPaper.objects.all()
     serializer_class = TestPaperSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    authentication_classes=[TokenAuthentication]
     pagination_class = StandardResultsSetPagination
     
     def update(self, request, *args, **kwargs):
@@ -868,6 +958,10 @@ class TestPaperViewSet(viewsets.ModelViewSet):
         
         
         # Apply filters
+        if self.request.user.is_authenticated:
+            accessible_camps = get_user_accessible_camps(self.request.user)
+            queryset = queryset.filter(camp__in=accessible_camps)
+            
         # Filter by type
         test_type = self.request.query_params.get('type')
         if test_type:
@@ -931,6 +1025,7 @@ class TestResultViewSet(viewsets.ModelViewSet):
     queryset = TestResult.objects.all()
     serializer_class = TestResultSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    authentication_classes=[TokenAuthentication]
     pagination_class = StandardResultsSetPagination
     
     def update(self, request, *args, **kwargs):
@@ -945,6 +1040,11 @@ class TestResultViewSet(viewsets.ModelViewSet):
         queryset = TestResult.objects.all().order_by('-result_date')  # Default sort by latest first
         
         # Apply filters
+        
+        if self.request.user.is_authenticated:
+            accessible_camps = get_user_accessible_camps(self.request.user)
+            queryset = queryset.filter(camp__in=accessible_camps)
+            
         # Filter by type
         test_type = self.request.query_params.get('type')
         if test_type:

@@ -51,30 +51,6 @@ class UserRegisterSerializer(serializers.ModelSerializer):
         
         return user
 
-class ProfileSerializer(serializers.ModelSerializer):
-    user = UserSerializer(read_only=True)
-    
-    class Meta:
-        model = Profile
-        fields = ('id', 'user', 'bio', 'entry_number', 'mobile_number', 'email', 
-                 'profile_pic', 'role', 'created_at', 'updated_at')
-        read_only_fields = ('id', 'created_at', 'updated_at')
-
-class ApprovalRequestSerializer(serializers.ModelSerializer):
-    user = UserSerializer(read_only=True)
-    username = serializers.CharField(source='user.username', read_only=True)
-    email = serializers.CharField(source='user.email', read_only=True)
-    full_name = serializers.SerializerMethodField()
-    
-    class Meta:
-        model = ApprovalRequest
-        fields = ('id', 'user', 'username', 'email', 'full_name', 'status', 'requested_role', 
-                 'message', 'created_at', 'updated_at', 'reviewed_by', 'review_comments')
-        read_only_fields = ('id', 'user', 'username', 'email', 'created_at', 'updated_at')
-    
-    def get_full_name(self, obj):
-        return f"{obj.user.first_name} {obj.user.last_name}".strip()
-    
 class UpdateSerializer(serializers.ModelSerializer):
     author_name = serializers.SerializerMethodField()
     time_formatted = serializers.SerializerMethodField()
@@ -103,6 +79,36 @@ class CampSerializer(serializers.ModelSerializer):
         model = Camp
         fields = ['id', 'title', 'year', 'city', 'state', 'location', 'image', 
                  'total_students', 'student_count', 'created_at', 'updated_at', 'updates']
+        
+class ProfileSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+    allocated_camps = CampSerializer(many=True, read_only=True)
+    allocated_camp_ids = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Profile
+        fields = ('id', 'user', 'bio', 'entry_number', 'mobile_number', 'email', 
+                 'profile_pic', 'role', 'created_at', 'updated_at', 'allocated_camps', 'allocated_camp_ids')
+        read_only_fields = ('id', 'created_at', 'updated_at')
+        
+    def get_allocated_camp_ids(self, obj):
+        return list(obj.allocated_camps.values_list('id', flat=True))
+
+class ApprovalRequestSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+    username = serializers.CharField(source='user.username', read_only=True)
+    email = serializers.CharField(source='user.email', read_only=True)
+    full_name = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = ApprovalRequest
+        fields = ('id', 'user', 'username', 'email', 'full_name', 'status', 'requested_role', 
+                 'message', 'created_at', 'updated_at', 'reviewed_by', 'review_comments')
+        read_only_fields = ('id', 'user', 'username', 'email', 'created_at', 'updated_at')
+    
+    def get_full_name(self, obj):
+        return f"{obj.user.first_name} {obj.user.last_name}".strip()
+    
 
 class DownloadSerializer(serializers.ModelSerializer):
     class Meta:
