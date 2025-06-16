@@ -84,15 +84,23 @@ class ProfileSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
     allocated_camps = CampSerializer(many=True, read_only=True)
     allocated_camp_ids = serializers.SerializerMethodField()
+    first_name = serializers.CharField(source='user.first_name', required=False)
+    last_name = serializers.CharField(source='user.last_name', required=False)
     
     class Meta:
         model = Profile
-        fields = ('id', 'user', 'bio', 'entry_number', 'mobile_number', 'email', 
+        fields = ('id','first_name', 'last_name', 'user', 'bio', 'entry_number', 'mobile_number', 'email', 
                  'profile_pic', 'role', 'created_at', 'updated_at', 'allocated_camps', 'allocated_camp_ids')
         read_only_fields = ('id', 'created_at', 'updated_at')
         
     def get_allocated_camp_ids(self, obj):
         return list(obj.allocated_camps.values_list('id', flat=True))
+    def update(self, instance, validated_data):
+        user_data = validated_data.pop('user', {})
+        for attr, value in user_data.items():
+            setattr(instance.user, attr, value)
+        instance.user.save()
+        return super().update(instance, validated_data)
 
 class ApprovalRequestSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)

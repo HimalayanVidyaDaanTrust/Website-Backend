@@ -463,8 +463,9 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
     def get_object(self):
         # Create profile if it doesn't exist
         profile, created = Profile.objects.get_or_create(user=self.request.user)
-        print(profile)
         return profile
+    def patch(self, request, *args, **kwargs):
+        return self.partial_update(request, *args, **kwargs)
 
 class StandardResultsSetPagination(PageNumberPagination):
     page_size = 10
