@@ -4,6 +4,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny,BasePermission, SAFE_METHODS
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication,TokenAuthentication
+from rest_framework.parsers import MultiPartParser, FormParser
 from django.contrib.auth.models import User
 from django.db import IntegrityError
 import traceback
@@ -595,7 +596,7 @@ class BrochureViewSet(viewsets.ModelViewSet):
     serializer_class = BrochureSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     authentication_classes=[TokenAuthentication]
-    content_negotiation_class = IgnoreClientContentNegotiation
+    parser_classes = [MultiPartParser, FormParser]
     
     def get_serializer_context(self):
         context = super().get_serializer_context()
@@ -621,7 +622,8 @@ class ReportViewSet(viewsets.ModelViewSet):
     serializer_class = ReportSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     authentication_classes=[TokenAuthentication]
-    content_negotiation_class = IgnoreClientContentNegotiation
+    parser_classes = [MultiPartParser, FormParser]
+    
     
     def get_serializer_context(self):
         context = super().get_serializer_context()

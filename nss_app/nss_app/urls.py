@@ -29,8 +29,6 @@ non_prefixed_router = DefaultRouter()
 non_prefixed_router.register(r'contact', ContactViewSet)
 non_prefixed_router.register(r'downloads', DownloadViewSet)
 non_prefixed_router.register(r'gallery', GalleryViewSet)
-non_prefixed_router.register(r'brochures', BrochureViewSet)
-non_prefixed_router.register(r'reports', ReportViewSet)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
