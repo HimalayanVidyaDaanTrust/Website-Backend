@@ -6,7 +6,7 @@ from .views import (
     BrochureViewSet, ReportViewSet, get_csrf_token,
     GalleryList, GalleryDetail, GalleryDownload,
     CampViewSet, UpdateViewSet, StudentViewSet, update_register,
-    TestPaperViewSet, TestResultViewSet, LoginView, ApprovalRequestViewSet
+    TestPaperViewSet, TestResultViewSet, LoginView, ApprovalRequestViewSet,VolunteerApplicationViewSet,PartnerApplicationViewSet
 )
 
 # ✅ CORRECT - Use router for ViewSets
@@ -22,6 +22,9 @@ router.register(r'students', StudentViewSet)
 router.register(r'test-papers', TestPaperViewSet)
 router.register(r'test-results', TestResultViewSet)
 router.register(r'approval-requests', ApprovalRequestViewSet)
+router.register(r'volunteer-applications', VolunteerApplicationViewSet)
+router.register(r'partner-applications', PartnerApplicationViewSet)
+
 
 urlpatterns = [
     # path('', api_index, name='api-index'),

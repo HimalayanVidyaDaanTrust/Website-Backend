@@ -9,11 +9,11 @@ from django.contrib.auth.models import User
 from django.db import IntegrityError
 import traceback
 import logging
-from .models import Profile, Download, Gallery, Brochure, Report, Contact,ApprovalRequest,Camp,Update,Student,TestPaper,TestResult
+from .models import Profile, Download, Gallery, Brochure, Report, Contact,ApprovalRequest,Camp,Update,Student,TestPaper,TestResult,VolunteerApplication,PartnerApplication
 from .serializers import (
-    UserSerializer, UserRegisterSerializer, ProfileSerializer,ApprovalRequestSerializer,
+    UserRegisterSerializer, ProfileSerializer,ApprovalRequestSerializer,
     DownloadSerializer, GallerySerializer,
-    BrochureSerializer, ReportSerializer, ContactSerializer,CampSerializer,UpdateSerializer,StudentSerializer,TestPaperSerializer,TestResultSerializer
+    BrochureSerializer, ReportSerializer, ContactSerializer,CampSerializer,UpdateSerializer,StudentSerializer,TestPaperSerializer,TestResultSerializer,VolunteerApplicationSerializer,PartnerApplicationSerializer
 )
 from django.http import FileResponse, Http404, JsonResponse
 from django.views import View
@@ -1163,3 +1163,188 @@ def update_register(request):
         print(f"Error in update_register: {str(e)}")
         print(traceback.format_exc())
         return Response({'error': str(e)}, status=500)
+
+@method_decorator(csrf_exempt, name='dispatch')
+class VolunteerApplicationViewSet(viewsets.ModelViewSet):
+    queryset = VolunteerApplication.objects.all()
+    serializer_class = VolunteerApplicationSerializer
+    permission_classes = [permissions.AllowAny]
+    authentication_classes = [CsrfExemptSessionAuthentication, BasicAuthentication]
+    http_method_names = ['get', 'post', 'head', 'options']
+
+    def create(self, request, *args, **kwargs):
+        logger.info(f"Volunteer application data: {request.data}")
+        
+        # Map frontend role values to backend choices
+        role_mapping = {
+            'teacher': 'teacher',
+            'mentor': 'mentor', 
+            'content_creator': 'content_creator',
+            'technical_support': 'technical_support',
+            'administrative_support': 'administrative_support',
+            'field_coordinator': 'field_coordinator',
+            'other': 'other'
+        }
+        
+        # Create a copy of request data to modify
+        data = request.data.copy()
+        
+        # Map the role if it exists in mapping
+        if 'role' in data and data['role'] in role_mapping:
+            data['role'] = role_mapping[data['role']]
+        
+        serializer = self.get_serializer(data=data)
+        if serializer.is_valid():
+            volunteer = serializer.save()
+            self.send_volunteer_email(volunteer)
+            response_data = {
+                'message': 'Volunteer application submitted successfully',
+                'application': serializer.data
+            }
+            return Response(response_data, status=status.HTTP_201_CREATED)
+        
+        logger.error(f"Validation errors: {serializer.errors}")
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def send_volunteer_email(self, volunteer):
+        try:
+            # Construct HTML message
+            msg = MIMEMultipart()
+            msg['From'] = settings.EMAIL_HOST_USER
+            msg['To'] = 'tejashvikumawat@gmail.com'
+            msg['Subject'] = f"New Volunteer Application: {volunteer.get_role_display()}"
+            
+            html_body = f"""
+            <h3>New Volunteer Application Received</h3>
+            <p><strong>Name:</strong> {volunteer.full_name}</p>
+            <p><strong>Email:</strong> {volunteer.email}</p>
+            <p><strong>Role:</strong> {volunteer.get_role_display()}</p>
+            <p><strong>Message:</strong> {volunteer.message or 'No message provided'}</p>
+            <p><strong>Applied on:</strong> {volunteer.created_at.strftime('%d %B %Y at %I:%M %p')}</p>
+            """
+            
+            msg.attach(MIMEText(html_body, 'html'))
+            
+            # SMTP connection
+            server = smtplib.SMTP(settings.EMAIL_HOST, settings.EMAIL_PORT)
+            server.starttls()
+            server.login(settings.EMAIL_HOST_USER, settings.EMAIL_HOST_PASSWORD)
+            server.send_message(msg)
+            server.quit()
+            
+            logger.info("Volunteer email sent successfully.")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Primary volunteer email send failed: {e}")
+            # Fallback using Django's send_mail
+            try:
+                subject = f"New Volunteer Application: {volunteer.get_role_display()}"
+                plain_message = (
+                    f"Name: {volunteer.full_name}\n"
+                    f"Email: {volunteer.email}\n"
+                    f"Role: {volunteer.get_role_display()}\n"
+                    f"Message: {volunteer.message or 'No message provided'}\n"
+                    f"Applied on: {volunteer.created_at.strftime('%d %B %Y at %I:%M %p')}"
+                )
+                
+                send_mail(
+                    subject=subject,
+                    message=plain_message,
+                    from_email=settings.EMAIL_HOST_USER,
+                    recipient_list=['tejashvikumawat@gmail.com'],
+                    fail_silently=False,
+                )
+                
+                logger.info("Fallback volunteer email sent successfully.")
+                return True
+                
+            except Exception as fallback_error:
+                logger.error(f"Fallback volunteer email failed: {fallback_error}")
+                return False
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class PartnerApplicationViewSet(viewsets.ModelViewSet):
+    queryset = PartnerApplication.objects.all()
+    serializer_class = PartnerApplicationSerializer
+    permission_classes = [permissions.AllowAny]
+    authentication_classes = [CsrfExemptSessionAuthentication, BasicAuthentication]
+    http_method_names = ['get', 'post', 'head', 'options']
+
+    def create(self, request, *args, **kwargs):
+        logger.info(f"Partner application data: {request.data}")
+        
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            partner = serializer.save()
+            self.send_partner_email(partner)
+            response_data = {
+                'message': 'Partnership application submitted successfully',
+                'application': serializer.data
+            }
+            return Response(response_data, status=status.HTTP_201_CREATED)
+        
+        logger.error(f"Validation errors: {serializer.errors}")
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def send_partner_email(self, partner):
+        try:
+            # Construct HTML message
+            msg = MIMEMultipart()
+            msg['From'] = settings.EMAIL_HOST_USER
+            msg['To'] = 'tejashvikumawat@gmail.com'
+            msg['Subject'] = f"New Partnership Application: {partner.organization_name}"
+            
+            html_body = f"""
+            <h3>New Partnership Application Received</h3>
+            <p><strong>Organization:</strong> {partner.organization_name}</p>
+            <p><strong>Contact Person:</strong> {partner.contact_person}</p>
+            <p><strong>Email:</strong> {partner.email}</p>
+            <p><strong>Phone:</strong> {partner.phone or 'Not provided'}</p>
+            <p><strong>Organization Type:</strong> {partner.organization_type}</p>
+            <p><strong>Partnership Interest:</strong> {partner.partnership_interest}</p>
+            <p><strong>Applied on:</strong> {partner.created_at.strftime('%d %B %Y at %I:%M %p')}</p>
+            """
+            
+            msg.attach(MIMEText(html_body, 'html'))
+            
+            # SMTP connection
+            server = smtplib.SMTP(settings.EMAIL_HOST, settings.EMAIL_PORT)
+            server.starttls()
+            server.login(settings.EMAIL_HOST_USER, settings.EMAIL_HOST_PASSWORD)
+            server.send_message(msg)
+            server.quit()
+            
+            logger.info("Partner email sent successfully.")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Primary partner email send failed: {e}")
+            # Fallback using Django's send_mail
+            try:
+                subject = f"New Partnership Application: {partner.organization_name}"
+                plain_message = (
+                    f"Organization: {partner.organization_name}\n"
+                    f"Contact Person: {partner.contact_person}\n"
+                    f"Email: {partner.email}\n"
+                    f"Phone: {partner.phone or 'Not provided'}\n"
+                    f"Organization Type: {partner.organization_type}\n"
+                    f"Partnership Interest: {partner.partnership_interest}\n"
+                    f"Applied on: {partner.created_at.strftime('%d %B %Y at %I:%M %p')}"
+                )
+                
+                send_mail(
+                    subject=subject,
+                    message=plain_message,
+                    from_email=settings.EMAIL_HOST_USER,
+                    recipient_list=['tejashvikumawat@gmail.com'],
+                    fail_silently=False,
+                )
+                
+                logger.info("Fallback partner email sent successfully.")
+                return True
+                
+            except Exception as fallback_error:
+                logger.error(f"Fallback partner email failed: {fallback_error}")
+                return False

@@ -332,3 +332,39 @@ class TestResult(models.Model):
     
     def __str__(self):
         return f"{self.title} - {self.get_type_display()} ({self.result_date})"
+
+class VolunteerApplication(models.Model):
+    ROLE_CHOICES = [
+        ('teacher', 'Teacher'),
+        ('mentor', 'Mentor'),
+        ('coordinator', 'Coordinator'),
+        ('content_creator', 'Content Creator'),
+        ('other', 'Other'),
+    ]
+    
+    full_name = models.CharField(max_length=200)
+    email = models.EmailField()
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES)
+    message = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"{self.full_name} - {self.get_role_display()}"
+    
+    class Meta:
+        ordering = ['-created_at']
+
+class PartnerApplication(models.Model):
+    organization_name = models.CharField(max_length=200)
+    contact_person = models.CharField(max_length=200)
+    email = models.EmailField()
+    phone = models.CharField(max_length=15, blank=True, null=True)
+    organization_type = models.CharField(max_length=100)
+    partnership_interest = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"{self.organization_name} - {self.contact_person}"
+    
+    class Meta:
+        ordering = ['-created_at']

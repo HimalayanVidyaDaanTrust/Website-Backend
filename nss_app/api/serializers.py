@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import Profile, Download, Gallery, Brochure, Report, Contact,ApprovalRequest, Camp,Update,Student,TestResult,TestPaper
+from .models import Profile, Download, Gallery, Brochure, Report, Contact,ApprovalRequest, Camp,Update,Student,TestResult,TestPaper,PartnerApplication,VolunteerApplication
 from django.conf import settings
 
 class UserSerializer(serializers.ModelSerializer):
@@ -261,3 +261,16 @@ class TestResultSerializer(serializers.ModelSerializer):
     
     def get_result_date_formatted(self, obj):
         return obj.result_date.strftime('%d-%m-%Y')
+    
+class VolunteerApplicationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = VolunteerApplication
+        fields = ('id', 'full_name', 'email', 'role', 'message', 'created_at')
+        read_only_fields = ('id', 'created_at')
+
+class PartnerApplicationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PartnerApplication
+        fields = ('id', 'organization_name', 'contact_person', 'email', 'phone', 
+                 'organization_type', 'partnership_interest', 'created_at')
+        read_only_fields = ('id', 'created_at')
