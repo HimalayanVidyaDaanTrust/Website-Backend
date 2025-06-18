@@ -28,7 +28,6 @@ from api.views import (
 non_prefixed_router = DefaultRouter()
 non_prefixed_router.register(r'contact', ContactViewSet)
 non_prefixed_router.register(r'downloads', DownloadViewSet)
-non_prefixed_router.register(r'gallery', GalleryViewSet)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
