@@ -1,10 +1,28 @@
+# Virtual environment
 .venv/
+venv
+ENV/
+env/
+
+# Python bytecode
+*.py[cod]
+__pycache__
+
+# Environment variables
 .env
+
+# Django-specific
 nss_app/db.sqlite3
 nss_app/media/
-nss_app/staticfiles/
 nss_app/static/
+nss_app/staticfiles/
 
+# Ignore all migration files except __init__.py
 **/migrations/*.py
 !**/migrations/__init__.py
-**/__pycache__/
+
+# IDEs and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
