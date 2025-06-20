@@ -24,9 +24,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-your-secret-key-here'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'api.himalayanvidyadaan.org', 'www.himalayanvidyadaan.org', 'himalayanvidyadaan.org', 'admin.himalayanvidyadaan.org','*']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'api.himalayanvidyadaan.org', 'www.himalayanvidyadaan.org', 'himalayanvidyadaan.org', 'admin.himalayanvidyadaan.org','*', 'tejashvi.pythonanywhere.com']
 
 
 # Application definition
@@ -209,7 +209,7 @@ CSRF_TRUSTED_ORIGINS = [
 
 # Session settings
 SESSION_COOKIE_SECURE = False  # Changed from True to False for development
-SESSION_COOKIE_SAMESITE = None  # Changed from 'Lax' to None for development
+SESSION_COOKIE_SAMESITE = 'Lax'  # Changed from 'Lax' to None for development
 SESSION_COOKIE_HTTPONLY = True
 if DEBUG:
     VITE_API_URL = 'http://localhost:8000'
