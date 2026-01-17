@@ -1,6 +1,25 @@
 from django.http import HttpResponseForbidden
 from django.urls import resolve
 
+
+class CacheControlMiddleware:
+    """Add cache headers for static and media assets."""
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        response = self.get_response(request)
+
+        if request.method == 'GET':
+            path = request.path_info or ''
+            if path.startswith('/static/'):
+                response['Cache-Control'] = 'public, max-age=31536000, immutable'
+            elif path.startswith('/media/'):
+                response['Cache-Control'] = 'public, max-age=86400'
+
+        return response
+
 class ApprovalCheckMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
